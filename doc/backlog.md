@@ -1,3 +1,4 @@
+* Go over each class. Understand it, review it and split it if needed.
 * Use multiple microphone inputs to get better results
 * Recording
 * Sensitivity

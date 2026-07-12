@@ -4,9 +4,12 @@ use std::time::Duration;
 
 use crossbeam_channel::{bounded, Receiver, Sender};
 
-/// Safe wrapper around `cpal::Stream` which is not `Send` on Windows.
-/// This is safe because we only access the stream through a `Mutex` from a single thread at a time.
-#[allow(dead_code)]
+use cpal::traits::{DeviceTrait, StreamTrait};
+
+use crate::audio::device;
+use crate::error::DetectionError;
+use crate::pitch::{PitchDetector, PitchFrame};
+
 pub(crate) struct SafeStream(Option<cpal::Stream>);
 unsafe impl Send for SafeStream {}
 
@@ -20,11 +23,6 @@ impl SafeStream {
         self.0.take()
     }
 }
-
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-
-use crate::error::DetectionError;
-use crate::pitch::{PitchDetector, PitchFrame};
 
 #[derive(Debug, Clone)]
 pub struct CaptureConfig {
@@ -86,68 +84,42 @@ impl CaptureEngine {
         let host = cpal::default_host();
         tracing::info!(host_id = ?host.id(), "using audio host");
 
-        // Enumerate all available devices and their supported configs
-        match host.devices() {
-            Ok(devices) => {
-                for device in devices {
-                    let name = device.name().unwrap_or_else(|_| "(unknown)".into());
-                    tracing::debug!(device = %name, "found input device");
-                    if let Ok(configs) = device.supported_input_configs() {
-                        for cfg in configs {
-                            tracing::trace!(
-                                device = %name,
-                                channels = cfg.channels(),
-                                min_sample_rate = cfg.min_sample_rate().0,
-                                max_sample_rate = cfg.max_sample_rate().0,
-                                buffer_size = ?cfg.buffer_size(),
-                                "supported input config"
-                            );
-                        }
-                    }
-                }
-            }
-            Err(e) => tracing::warn!(error = %e, "failed to enumerate audio devices"),
-        }
+        device::log_device_enumeration(&host);
 
-        let device = if let Some(ref name) = self.config.device_name {
-            let found = host.devices()
-                .ok()
-                .into_iter()
-                .flatten()
-                .find(|d| d.name().ok().as_deref() == Some(name.as_str()));
-            if found.is_some() {
-                tracing::info!(device = %name, "using specified input device");
-            } else {
-                tracing::warn!(device = %name, "specified device not found, trying default");
-            }
-            found
-        } else {
-            let default = host.default_input_device();
-            if let Some(ref dev) = default {
-                let name = dev.name().unwrap_or_else(|_| "(unknown)".into());
-                tracing::info!(device = %name, "using default input device");
-            } else {
-                tracing::error!("no default input device found");
-            }
-            default
-        }
-        .ok_or(DetectionError::NoDevice)?;
-
+        let device = device::resolve_device(&host, &self.config)?;
         let device_name = device.name().unwrap_or_else(|_| "(unknown)".into());
 
-        // Resolve stream config: prefer requested settings but fall back
-        let config = resolve_input_config(&device, &self.config)?;
+        let stream_config = device::resolve_input_config(&device, &self.config)?;
         tracing::info!(
             device = %device_name,
-            sample_rate = config.sample_rate.0,
-            channels = config.channels,
-            buffer_size = ?config.buffer_size,
+            sample_rate = stream_config.sample_rate.0,
+            channels = stream_config.channels,
+            buffer_size = ?stream_config.buffer_size,
             "building input stream"
         );
 
+        let (cpal_stream, raw_rx) = self.build_input_stream(&device, &stream_config)?;
+
+        let (control_tx, control_rx) = bounded::<ControlSignal>(16);
+        self.control_tx = control_tx;
+
+        let handle = self.spawn_dsp_worker(raw_rx, control_rx)?;
+
+        self.handle = Some(handle);
+        self.stream = SafeStream(Some(cpal_stream));
+        self.running.store(true, Ordering::SeqCst);
+
+        Ok(())
+    }
+
+    fn build_input_stream(
+        &self,
+        device: &cpal::Device,
+        config: &cpal::StreamConfig,
+    ) -> Result<(cpal::Stream, Receiver<Vec<f32>>), DetectionError> {
+        let device_name = device.name().unwrap_or_else(|_| "(unknown)".into());
         let channels = config.channels;
         let (raw_tx, raw_rx) = bounded::<Vec<f32>>(256);
-        let running = self.running.clone();
 
         let error_callback = move |err: cpal::StreamError| {
             tracing::error!(error = %err, "cpal stream error");
@@ -155,7 +127,6 @@ impl CaptureEngine {
 
         let data_callback = move |data: &[f32], _: &cpal::InputCallbackInfo| {
             let mono = if channels >= 2 {
-                // Interleaved stereo — take only the first channel
                 data.iter().step_by(channels as usize).copied().collect()
             } else {
                 data.to_vec()
@@ -165,8 +136,8 @@ impl CaptureEngine {
             }
         };
 
-        let cpal_stream = device
-            .build_input_stream::<f32, _, _>(&config, data_callback, error_callback, None)
+        let stream = device
+            .build_input_stream::<f32, _, _>(config, data_callback, error_callback, None)
             .inspect_err(|e| {
                 tracing::error!(
                     device = %device_name,
@@ -179,23 +150,25 @@ impl CaptureEngine {
             })?;
 
         tracing::info!("starting stream playback");
-        cpal_stream.play().inspect_err(|e| {
+        stream.play().inspect_err(|e| {
             tracing::error!(error = %e, "failed to start stream");
         })?;
         tracing::info!("capture stream is now live");
 
-        let (control_tx, control_rx) = bounded::<ControlSignal>(16);
-        self.control_tx = control_tx;
+        Ok((stream, raw_rx))
+    }
 
+    fn spawn_dsp_worker(
+        &mut self,
+        raw_rx: Receiver<Vec<f32>>,
+        control_rx: Receiver<ControlSignal>,
+    ) -> Result<std::thread::JoinHandle<()>, DetectionError> {
         let pitch_tx = self.pitch_tx.clone();
         let mut detector = std::mem::replace(
             &mut self.detector,
             Box::new(crate::pitch::dummy::DummyDetector::new(0.0, 0.0, false)),
         );
         let buffer_size = self.config.buffer_size;
-
-        let running_clone = running.clone();
-        running_clone.store(true, Ordering::SeqCst);
 
         let handle = std::thread::Builder::new()
             .name("dsp-worker".into())
@@ -204,7 +177,8 @@ impl CaptureEngine {
 
                 loop {
                     match control_rx.try_recv() {
-                        Ok(ControlSignal::Stop) | Err(crossbeam_channel::TryRecvError::Disconnected) => {
+                        Ok(ControlSignal::Stop)
+                        | Err(crossbeam_channel::TryRecvError::Disconnected) => {
                             break;
                         }
                         _ => {}
@@ -228,7 +202,6 @@ impl CaptureEngine {
                     }
                 }
 
-                // Process any remaining samples
                 if !buffer.is_empty() {
                     let frames = detector.process(&buffer);
                     for frame in frames {
@@ -238,11 +211,7 @@ impl CaptureEngine {
             })
             .map_err(|e| DetectionError::StreamError(e.to_string()))?;
 
-        self.handle = Some(handle);
-        self.stream = SafeStream(Some(cpal_stream));
-        self.running.store(true, Ordering::SeqCst);
-
-        Ok(())
+        Ok(handle)
     }
 
     pub fn stop(&mut self) -> Result<(), DetectionError> {
@@ -273,8 +242,6 @@ impl CaptureEngine {
         self.running.load(Ordering::SeqCst)
     }
 
-    /// Feed audio samples directly into the detector pipeline without cpal.
-    /// Used for testing — pushes resulting PitchFrames into the same pitch channel.
     pub fn feed_audio(&mut self, samples: &[f32]) -> Vec<PitchFrame> {
         let frames = self.detector.process(samples);
         for frame in &frames {
@@ -293,121 +260,4 @@ impl Drop for CaptureEngine {
         tracing::debug!("dropping CaptureEngine");
         let _ = self.stop();
     }
-}
-
-fn resolve_input_config(
-    device: &cpal::Device,
-    desired: &CaptureConfig,
-) -> Result<cpal::StreamConfig, DetectionError> {
-    let device_name = device.name().unwrap_or_else(|_| "(unknown)".into());
-
-    // Start with the device's default config
-    let default_cfg = device.default_input_config().map_err(|e| {
-        tracing::error!(device = %device_name, error = %e, "no default input config");
-        DetectionError::StreamError(format!("no default input config for {device_name}: {e}"))
-    })?;
-
-    tracing::debug!(
-        device = %device_name,
-        default_channels = default_cfg.channels(),
-        default_sample_rate = default_cfg.sample_rate().0,
-        "device default input config"
-    );
-
-    // Enumerate supported configs and log them
-    let supported: Vec<_> = match device.supported_input_configs() {
-        Ok(cfgs) => {
-            let collected: Vec<_> = cfgs.collect();
-            for cfg in &collected {
-                tracing::debug!(
-                    device = %device_name,
-                    channels = cfg.channels(),
-                    min_sample_rate = cfg.min_sample_rate().0,
-                    max_sample_rate = cfg.max_sample_rate().0,
-                    buffer_size = ?cfg.buffer_size(),
-                    "supported input config"
-                );
-            }
-            collected
-        }
-        Err(e) => {
-            tracing::warn!(device = %device_name, error = %e, "cannot enumerate supported configs, using default");
-            return Ok(cpal::StreamConfig {
-                channels: default_cfg.channels(),
-                sample_rate: default_cfg.sample_rate(),
-                buffer_size: cpal::BufferSize::Default,
-            });
-        }
-    };
-
-    if supported.is_empty() {
-        tracing::warn!(device = %device_name, "no supported input configs, using default");
-        return Ok(cpal::StreamConfig {
-            channels: default_cfg.channels(),
-            sample_rate: default_cfg.sample_rate(),
-            buffer_size: cpal::BufferSize::Default,
-        });
-    }
-
-    // Strategy:
-    // 1. Prefer exact match: desired channels + rate if supported
-    // 2. Fall back to device's default config (channels + rate)
-    // 3. Use the device's exact channel count — WASAPI requires exact match
-
-    let desired_rate = desired.sample_rate;
-
-    // Does the device support mono at the desired rate?
-    let exact_mono = supported.iter().find(|cfg| {
-        cfg.channels() == 1
-            && desired_rate >= cfg.min_sample_rate().0
-            && desired_rate <= cfg.max_sample_rate().0
-    });
-
-    if let Some(cfg) = exact_mono {
-        let rate = desired_rate.clamp(cfg.min_sample_rate().0, cfg.max_sample_rate().0);
-        tracing::info!(
-            device = %device_name,
-            requested_rate = desired_rate,
-            resolved_rate = rate,
-            channels = 1u32,
-            "using mono config"
-        );
-        return Ok(cpal::StreamConfig {
-            channels: 1,
-            sample_rate: cpal::SampleRate(rate),
-            buffer_size: cpal::BufferSize::Default,
-        });
-    }
-
-    // Mono not available — use the default config's channel count and find
-    // the best supported rate. We'll extract mono from the first channel.
-    let default_channels = default_cfg.channels();
-    let best_rate = supported
-        .iter()
-        .filter(|cfg| cfg.channels() == default_channels)
-        .flat_map(|cfg| {
-            let low = cfg.min_sample_rate().0;
-            let high = cfg.max_sample_rate().0;
-            if desired_rate >= low && desired_rate <= high {
-                vec![desired_rate]
-            } else {
-                vec![low, high]
-            }
-        })
-        .min_by_key(|&r| (desired_rate as i32 - r as i32).unsigned_abs())
-        .unwrap_or(default_cfg.sample_rate().0);
-
-    tracing::info!(
-        device = %device_name,
-        requested_rate = desired_rate,
-        resolved_rate = best_rate,
-        channels = default_channels,
-        note = "mono not available, using device channel count"
-    );
-
-    Ok(cpal::StreamConfig {
-        channels: default_channels,
-        sample_rate: cpal::SampleRate(best_rate),
-        buffer_size: cpal::BufferSize::Default,
-    })
 }
