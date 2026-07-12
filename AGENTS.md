@@ -1,43 +1,61 @@
-# AGENTS.md - Tauri & Rust App Guidelines
+# FerroTone — AGENTS.md
 
-## Project Overview
-This is a cross-platform desktop application built with the **Tauri v2** framework, leveraging a native **Rust** backend core and a high-performance **TypeScript / React** frontend.
+## Project
 
-## Development Commands
-### Package Manager Focus
-Always use `npm` for frontend management (or swap to `pnpm`/`bun` if explicit in package.json).
+Tauri v2 desktop app for real-time vocal pitch training. Currently at starter-template stage — the `doc/` directory contains the planned architecture but nothing beyond the scaffold is implemented yet.
 
-### Core Commands
-* **Dev Environment**: `npm run tauri dev` (Runs Vite + Tauri development window)
-* **Production Build**: `npm run tauri build` (Compiles release binary)
-* **Frontend Only Dev**: `npm run dev`
-* **Rust Linting**: `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
-* **Rust Formatting**: `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
-* **Frontend Linting**: `npm run lint`
+## Stack
 
-## Architecture & Communication Flow
-The project relies on a dual-layer, message-passing desktop architecture:
-1. `src/` - Frontend layer. Uses React, Vite, and TypeScript.
-2. `src-tauri/` - Backend layer. Native Rust runtime with system-level access.
+- **Frontend**: React 19, TypeScript 5.8, Vite 7 (`src/`)
+- **Backend**: Tauri v2, Rust (edition 2021) (`src-tauri/`)
+- **Planned**: `crates/ferrotone-core/` (pure Rust crate, no Tauri dep) — not yet created
 
-### IPC (Inter-Process Communication) Rules
-* **Commands**: Frontend initiates actions via `invoke('command_name', { args })`.
-* **Events**: Backend pushes real-time updates using Tauri's event emitter emitting payload streams (`emit` / `listen`).
-* **Isolation**: Never perform raw FFI, direct database mutations, or unsafe disk access in the frontend layer. Always route these through registered Tauri Rust commands.
+## Commands
 
-## Code Style & Conventions
+| Command | Purpose |
+|---------|---------|
+| `npm run tauri dev` | Dev mode — Vite on port 1420 + Tauri window |
+| `npm run dev` | Frontend-only Vite dev server (no Tauri) |
+| `npm run build` | `tsc && vite build` (frontend only) |
+| `npm run tauri build` | Production binary |
+| `cargo test --workspace` | All Rust tests (core + shell) |
+| `npx vitest run` | Frontend tests |
+| `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` | Rust lint |
+| `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` | Rust formatting |
 
-### Rust Backend (`src-tauri/`)
-* **Error Handling**: Never use `unwrap()` or `expect()` in production paths. Always return a structured `Result<T, E>`.
-* **Tauri Command Errors**: Return a `Result<T, String>` or a serialized custom error enum so Tauri can pass it to JavaScript's `catch` block.
-* **State Management**: Persist global states using Tauri’s managed state system (`tauri::State<'_, MyState>`). Inject states directly into command signatures.
-* **Imports & Modularity**: Group commands in a `commands/` or `services/` module. Keep `lib.rs` and `main.rs` strictly clean for setup, plugin registries, and invoke handlers.
+No frontend lint config exists yet (no eslint/prettier). `npm run lint` is not wired.
 
-### TypeScript / React Frontend (`src/`)
-* **Strict Typing**: Maintain strict TypeScript patterns. Avoid using `any`. Write explicit interfaces for all incoming Tauri command responses.
-* **Tauri Environment Safety**: Guard Tauri-specific APIs or checks with platform detection (`window.__TAURI__`) if fallback web previews are required.
-* **Asynchronous Calls**: Wrap IPC `invoke` calls inside React hooks, `async/await` blocks, or data-fetching libraries like TanStack Query.
+## Architecture (planned)
 
-## Critical Security Boundaries
-* **Capability Configurations**: Define individual plugin permissions explicitly within `src-tauri/capabilities/`.
-* **Path Handlers**: Always use Tauri's scoped path resolvers (e.g., `$APPDATA`, `$DOCUMENT`) to access system file paths instead of raw hardcoded strings.
+Three-tier design documented in `doc/PHASE1.md`:
+
+```
+src/                          # React/TS frontend
+src-tauri/                    # Tauri shell (thin IPC layer)
+crates/ferrotone-core/        # Pure Rust crate (not yet created)
+  ├── audio/                  #   cpal capture engine
+  ├── pitch/                  #   PitchDetector trait, SWIPE' impl, DummyDetector
+  └── music/                  #   hz_to_midi, midi_to_note_name, cents_off
+```
+
+Key design rule: `ferrotone-core` has zero Tauri dependency — testable in isolation, reusable from WASM. The `src-tauri` crate is a thin shell that wires core to UI via IPC.
+
+## IPC pattern
+
+- Frontend calls Rust via `invoke('command_name', { args })` from `@tauri-apps/api/core`
+- Rust emits real-time events (e.g. `"pitch-frame"`) via `app_handle.emit()`, frontend listens with `listen()` from `@tauri-apps/api/event`
+- All audio/DSP lives in `ferrotone-core`; `src-tauri` only routes commands and events
+
+## Testing
+
+- Rust: `cargo test --workspace` (unit tests in `ferrotone-core`, integration tests in `src-tauri/tests/` using Tauri's `MockRuntime`)
+- Frontend: `npx vitest run` (Vitest with `@tauri-apps/api/mocks`)
+- Integration tests use `DummyDetector` (no real mic needed)
+
+## Key conventions
+
+- No `unwrap()`/`expect()` in production Rust code — return `Result<T, String>` for Tauri commands
+- Tauri managed state via `tauri::State<'_, AppState>` with `Mutex<Option<CaptureEngine>>`
+- Capability permissions in `src-tauri/capabilities/default.json`
+- Vite dev server on port 1420 (strict), ignores `src-tauri/` changes
+- `src-tauri/src/main.rs` has `#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]` — do not remove
