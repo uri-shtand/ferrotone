@@ -1,4 +1,4 @@
-# FerroTone 🎸🎤
+# FerroTone
 
 An open-source, high-performance cross-platform desktop application designed to help vocalists learn to sing, practice pitch accuracy, and train their ears using real-time audio visualization and AI-driven source separation.
 
@@ -6,7 +6,7 @@ Built with **Tauri**, **Rust**, **React/TypeScript**, and **Python**.
 
 ---
 
-## 🚀 Overview
+##  Overview
 
 FerroTone is designed to bridge the gap between gamified singing experiences and professional vocal coaching. 
 By utilizing a hybrid architecture, the application offloads heavy Digital Signal Processing (DSP) and native audio device integration
@@ -22,7 +22,7 @@ to a hyper-fast Rust core, while leveraging Python's robust machine learning eco
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 
 FerroTone utilizes a decoupled, three-tier architecture to maximize computational efficiency while keeping the binary payload small:
 
@@ -47,36 +47,131 @@ FerroTone utilizes a decoupled, three-tier architecture to maximize computationa
 │  • Static Track Target Pitch Profile Analysis          │
 └────────────────────────────────────────────────────────┘
 
-# Tech Stack & Open Source Libraries
+## Tech Stack
 
-Frontend Framework: React 18+ with TypeScript
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19, TypeScript 5.8, Vite 7 |
+| Desktop Shell | Tauri v2 |
+| Core (DSP/Audio) | Rust (edition 2021) with `cpal`, `rodio`, `pitch-detection` |
+| AI Sidecar (planned) | Python 3.10+ with Spleeter/Demucs, librosa |
+| Rendering | Native HTML5 Canvas (Context2D) — 60 FPS pitch grid |
 
-Build Tool: Vite
+---
 
-Rendering: Native HTML5 Context2D Canvas for low-overhead audio wave/pitch rendering.
+## Getting Started
 
-Desktop App Shell & Backend Core Framework: Tauri v2
+### Prerequisites
 
-Core Language: Rust
+- [Node.js](https://nodejs.org/) 20+
+- [Rust](https://rustup.rs/) 1.85+ (nightly)
+- [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) (platform-specific)
 
-Audio I/O Handling: cpal (Cross-Platform Audio Library)
+### Install dependencies
 
-Audio Playback: rodio
+```sh
+npm install
+```
 
-DSP Engine: pitch-detection (Native Rust crate)
+### Run in development mode
 
-Machine Learning Engine (Sidecar)
+Launches Vite dev server on `localhost:1420` + Tauri desktop window with hot-reload:
 
-Core Language: Python 3.10+
+```sh
+npm run tauri dev
+```
 
-Vocal Splitting: deezer/spleeter or facebookresearch/demucs
+To work on the frontend only (no Tauri window):
 
-Analysis Library: librosa (for pre-calculating foundational $f_0$ frequency matrices)
+```sh
+npm run dev
+```
 
+### Build for production
 
-# Tauri + React + Typescript
+Frontend-only build (`tsc && vite build`):
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+```sh
+npm run build
+```
+
+Full desktop binary:
+
+```sh
+npm run tauri build
+```
+
+### Run tests
+
+Frontend (Vitest):
+
+```sh
+npm test
+```
+
+All Rust crates (`ferrotone-core` + Tauri shell):
+
+```sh
+cargo test --workspace
+```
+
+### Lint & format
+
+```sh
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+```
+
+---
+
+## Project Structure
+
+```
+ferrotone/
+├── src/                     # React / TypeScript frontend
+├── src-tauri/               # Tauri shell (thin IPC layer)
+│   ├── src/                 #   Rust backend (commands, events)
+│   ├── tests/               #   Integration tests (MockRuntime)
+│   └── capabilities/        #   Tauri capability permissions
+├── crates/
+│   └── ferrotone-core/      # Pure Rust crate (no Tauri dep)
+│       ├── src/
+│       │   ├── audio/       #   cpal capture engine
+│       │   ├── pitch/       #   YIN/MPM/SWIPE' detectors
+│       │   └── music/       #   hz_to_midi, note naming, cents
+│       └── tests/           #   Unit tests
+├── doc/                     # Architecture & design docs
+├── package.json
+└── README.md
+```
+
+---
+
+## Architecture
+
+FerroTone uses a decoupled three-tier design:
+
+```text
+┌────────────────────────────────────────────────────────┐
+│                   FRONTEND (UI LAYER)                  │
+│                React / TypeScript / Vite               │
+│  • 60 FPS Scrolling Visual Target Grid (Canvas)        │
+│  • Interactive Training Modules & Dashboard            │
+└───────────────────────────┬────────────────────────────┘
+                            │ Tauri IPC (Commands/Events)
+┌───────────────────────────▼────────────────────────────┐
+│                    TAURI CORE (RUST)                   │
+│  • Native Mic Capture Engine (via `cpal`)              │
+│  • Real-Time Pitch Analysis DSP (YIN/MPM algorithms)    │
+│  • Asynchronous Thread Management & Sidecar Controller │
+└───────────────────────────┬────────────────────────────┘
+                            │ Local Localhost Socket / IPC
+┌───────────────────────────▼────────────────────────────┐
+│                  AI ENGINE (PYTHON SIDECAR)            │
+│  • Audio Demixing Models (Spleeter / Demucs)           │
+│  • Static Track Target Pitch Profile Analysis          │
+└────────────────────────────────────────────────────────┘
+```
 
 ## Recommended IDE Setup
 
