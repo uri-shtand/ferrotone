@@ -28,6 +28,10 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::start_capture,
             commands::stop_capture,
+            commands::get_settings,
+            commands::update_settings,
+            commands::save_settings,
+            commands::list_devices,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

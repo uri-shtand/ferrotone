@@ -5,14 +5,14 @@ use ferrotone_core::config::Settings;
 
 pub struct AppState {
     pub engine: Mutex<Option<CaptureEngine>>,
-    pub settings: Settings,
+    pub settings: Mutex<Settings>,
 }
 
 impl AppState {
     pub fn new(settings: Settings) -> Self {
         Self {
             engine: Mutex::new(None),
-            settings,
+            settings: Mutex::new(settings),
         }
     }
 }

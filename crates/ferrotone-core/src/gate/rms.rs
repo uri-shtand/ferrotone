@@ -24,7 +24,7 @@ impl RmsGate {
     }
 }
 
-fn compute_rms(samples: &[f32]) -> f32 {
+pub fn compute_rms(samples: &[f32]) -> f32 {
     if samples.is_empty() {
         return 0.0;
     }
@@ -66,5 +66,25 @@ mod tests {
         assert!(gate.process(&samples));
         let gate = RmsGate::new(0.8);
         assert!(!gate.process(&samples));
+    }
+
+    #[test]
+    fn compute_rms_silence() {
+        assert_eq!(compute_rms(&[0.0; 1024]), 0.0);
+    }
+
+    #[test]
+    fn compute_rms_sine() {
+        let samples: Vec<f32> = (0..1024)
+            .map(|i| (2.0 * std::f32::consts::PI * 440.0 * i as f32 / 48000.0).sin())
+            .collect();
+        let rms = compute_rms(&samples);
+        // Sine at amplitude 1.0 has RMS of 1/√2 ≈ 0.707
+        assert!((rms - 0.707).abs() < 0.01);
+    }
+
+    #[test]
+    fn compute_rms_empty() {
+        assert_eq!(compute_rms(&[]), 0.0);
     }
 }

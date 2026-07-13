@@ -26,8 +26,11 @@ algorithm = "swipe"
 
 [noise_cancellation]
 enabled = false
+input_gain = 1.0
 rms_gate_enabled = true
 rms_threshold = 0.01
+confidence_gate_enabled = true
+confidence_threshold = 0.3
 bandpass_enabled = true
 bandpass_low = 80.0
 bandpass_high = 1000.0
@@ -53,8 +56,11 @@ active_profile = "default"
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `enabled` | bool | `false` | Master noise cancellation toggle |
+| `input_gain` | float | `1.0` | Input gain multiplier (0.0–2.0) |
 | `rms_gate_enabled` | bool | `true` | Enable RMS-based silence gate |
 | `rms_threshold` | float | `0.01` | RMS threshold below which input is silenced |
+| `confidence_gate_enabled` | bool | `true` | Enable confidence-based pitch frame filter |
+| `confidence_threshold` | float | `0.3` | Minimum clarity score (0.0–1.0) to pass a pitch frame |
 | `bandpass_enabled` | bool | `true` | Enable bandpass pre-filtering |
 | `bandpass_low` | float | `80.0` | Bandpass low cutoff (Hz) |
 | `bandpass_high` | float | `1000.0` | Bandpass high cutoff (Hz) |

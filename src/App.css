@@ -17,12 +17,55 @@
   padding: 0;
 }
 
+.layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+
 .container {
   max-width: 500px;
-  margin: 0 auto;
+  width: 100%;
   padding: 2rem 1rem;
   text-align: center;
 }
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.header-row h1 {
+  margin-bottom: 0;
+}
+
+.btn-gear {
+  background: none;
+  border: 1px solid #555;
+  color: #aaa;
+  font-size: 1.2rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.btn-gear:hover {
+  background: #333;
+  color: #f6f6f6;
+}
+
+.btn-gear.active {
+  background: #4ade80;
+  color: #1a1a2e;
+  border-color: #4ade80;
+}
+
+
 
 h1 {
   font-size: 1.5rem;
@@ -194,4 +237,235 @@ h1 {
   .status {
     color: #888;
   }
+  .audio-controls {
+    border-color: #ddd;
+  }
+  .audio-section-header {
+    color: #333;
+  }
+  .audio-section-header:hover {
+    background: #eee;
+  }
+  .audio-slider {
+    background: #ddd;
+  }
+  .audio-slider::-webkit-slider-thumb {
+    background: #555;
+  }
+  .audio-select {
+    background: #fff;
+    border-color: #ccc;
+    color: #333;
+  }
+  .audio-hint {
+    color: #888;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Audio Controls Widget                                               */
+/* ------------------------------------------------------------------ */
+
+.audio-controls {
+  margin-top: 1.5rem;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.audio-section {
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.audio-section:last-child {
+  border-bottom: none;
+}
+
+.audio-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.audio-section-header:hover {
+  background: #2a2a2a;
+}
+
+.audio-section-arrow {
+  font-size: 0.7rem;
+  transition: transform 0.15s;
+  display: inline-block;
+}
+
+.audio-section-arrow.open {
+  transform: rotate(0deg);
+}
+
+.audio-section-body {
+  padding: 0.25rem 0.75rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.audio-toggle-row,
+.audio-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.audio-toggle-label,
+.audio-slider-label {
+  font-size: 0.8rem;
+  color: #aaa;
+  min-width: 80px;
+}
+
+.audio-toggle {
+  border: none;
+  border-radius: 4px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.05em;
+}
+
+.audio-toggle.on {
+  background: #4ade80;
+  color: #1a1a2e;
+}
+
+.audio-toggle.off {
+  background: #444;
+  color: #888;
+}
+
+.audio-toggle.off:hover {
+  background: #555;
+}
+
+.audio-slider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #444;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.audio-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #4ade80;
+  cursor: pointer;
+  border: none;
+}
+
+.audio-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #4ade80;
+  cursor: pointer;
+  border: none;
+}
+
+.audio-slider-value {
+  font-size: 0.8rem;
+  color: #aaa;
+  min-width: 55px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.audio-select {
+  flex: 1;
+  background: #1a1a2e;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #f6f6f6;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.audio-controls-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.5rem 0.25rem;
+  gap: 1rem;
+}
+
+.btn-save {
+  background: #333;
+  color: #888;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 0.4rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.btn-save.dirty {
+  background: #4ade80;
+  color: #1a1a2e;
+  border-color: #4ade80;
+}
+
+.btn-save.dirty:hover {
+  background: #22c55e;
+}
+
+.btn-save:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.audio-hint {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+/* ------------------------------------------------------------------ */
+/* Volume Graph Widget                                                  */
+/* ------------------------------------------------------------------ */
+
+.volume-graph {
+  width: 100%;
+  height: 120px;
+  margin-top: 1.5rem;
+  border-top: 1px solid #2a2a2a;
+}
+
+.volume-graph canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }

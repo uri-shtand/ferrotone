@@ -5,7 +5,12 @@ use ferrotone_core::pitch::dummy::DummyDetector;
 fn confidence_gates_low_clarity() {
     let mut engine = CaptureEngine::new(
         Box::new(DummyDetector::new(440.0, 0.1, false)),
-        CaptureConfig::default(),
+        CaptureConfig {
+            noise_cancellation_enabled: true,
+            confidence_gate_enabled: true,
+            confidence_threshold: 0.3,
+            ..CaptureConfig::default()
+        },
     );
     let samples: Vec<f32> = (0..1024)
         .map(|i| (2.0 * std::f32::consts::PI * 440.0 * i as f32 / 48000.0).sin())
@@ -21,7 +26,12 @@ fn confidence_gates_low_clarity() {
 fn confidence_passes_high_clarity() {
     let mut engine = CaptureEngine::new(
         Box::new(DummyDetector::new(440.0, 0.9, true)),
-        CaptureConfig::default(),
+        CaptureConfig {
+            noise_cancellation_enabled: true,
+            confidence_gate_enabled: true,
+            confidence_threshold: 0.3,
+            ..CaptureConfig::default()
+        },
     );
     let samples: Vec<f32> = (0..1024)
         .map(|i| (2.0 * std::f32::consts::PI * 440.0 * i as f32 / 48000.0).sin())
@@ -34,6 +44,7 @@ fn confidence_passes_high_clarity() {
 #[test]
 fn confidence_gate_disabled_passes_low_clarity() {
     let config = CaptureConfig {
+        noise_cancellation_enabled: true,
         confidence_gate_enabled: false,
         ..CaptureConfig::default()
     };
