@@ -1,14 +1,14 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crossbeam_channel::{bounded, Receiver, Sender};
 
 use cpal::traits::{DeviceTrait, StreamTrait};
 
-use crate::audio::device;
+use crate::audio::{device, VolumeFrame};
 use crate::error::DetectionError;
-use crate::gate::{apply_gain, BandpassFilter, ConfidenceGate, RmsGate};
+use crate::gate::{apply_gain, compute_rms, BandpassFilter, ConfidenceGate, RmsGate};
 use crate::pitch::{PitchDetector, PitchFrame};
 
 pub(crate) struct SafeStream(Option<cpal::Stream>);
@@ -72,6 +72,8 @@ pub struct CaptureEngine {
     confidence_gate: ConfidenceGate,
     pitch_tx: Sender<PitchFrame>,
     pitch_rx: Receiver<PitchFrame>,
+    volume_tx: Sender<VolumeFrame>,
+    volume_rx: Receiver<VolumeFrame>,
     control_tx: Sender<ControlSignal>,
     handle: Option<std::thread::JoinHandle<()>>,
     stream: SafeStream,
@@ -81,6 +83,7 @@ pub struct CaptureEngine {
 impl CaptureEngine {
     pub fn new(detector: Box<dyn PitchDetector>, config: CaptureConfig) -> Self {
         let (pitch_tx, pitch_rx) = bounded(64);
+        let (volume_tx, volume_rx) = bounded(8);
         let (control_tx, _) = bounded(16);
 
         let gates_enabled = config.noise_cancellation_enabled;
@@ -96,6 +99,8 @@ impl CaptureEngine {
             config,
             pitch_tx,
             pitch_rx,
+            volume_tx,
+            volume_rx,
             control_tx,
             handle: None,
             stream: SafeStream(None),
@@ -150,7 +155,7 @@ impl CaptureEngine {
     ) -> Result<(cpal::Stream, Receiver<Vec<f32>>), DetectionError> {
         let device_name = device.name().unwrap_or_else(|_| "(unknown)".into());
         let channels = config.channels;
-        let (raw_tx, raw_rx) = bounded::<Vec<f32>>(256);
+        let (raw_tx, raw_rx) = bounded::<Vec<f32>>(8);
 
         let error_callback = move |err: cpal::StreamError| {
             tracing::error!(error = %err, "cpal stream error");
@@ -195,6 +200,7 @@ impl CaptureEngine {
         control_rx: Receiver<ControlSignal>,
     ) -> Result<std::thread::JoinHandle<()>, DetectionError> {
         let pitch_tx = self.pitch_tx.clone();
+        let volume_tx = self.volume_tx.clone();
         let mut detector = std::mem::replace(
             &mut self.detector,
             Box::new(crate::pitch::dummy::DummyDetector::new(0.0, 0.0, false)),
@@ -238,6 +244,17 @@ impl CaptureEngine {
 
                                 apply_gain(&mut chunk, input_gain);
                                 bandpass.process(&mut chunk);
+
+                                let rms = compute_rms(&chunk);
+                                let ts = SystemTime::now()
+                                    .duration_since(UNIX_EPOCH)
+                                    .unwrap_or_default()
+                                    .as_millis() as u64;
+                                let _ = volume_tx.try_send(VolumeFrame {
+                                    rms_level: rms,
+                                    timestamp_ms: ts,
+                                });
+
                                 if !rms_gate.process(&chunk) {
                                     continue;
                                 }
@@ -256,6 +273,15 @@ impl CaptureEngine {
                 if !buffer.is_empty() {
                     apply_gain(&mut buffer, input_gain);
                     bandpass.process(&mut buffer);
+                    let rms = compute_rms(&buffer);
+                    let ts = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_millis() as u64;
+                    let _ = volume_tx.try_send(VolumeFrame {
+                        rms_level: rms,
+                        timestamp_ms: ts,
+                    });
                     if rms_gate.process(&buffer) {
                         let frames = detector.process(&buffer);
                         let frames = confidence_gate.process(frames);
@@ -292,6 +318,10 @@ impl CaptureEngine {
 
     pub fn pitch_receiver(&self) -> &Receiver<PitchFrame> {
         &self.pitch_rx
+    }
+
+    pub fn volume_receiver(&self) -> &Receiver<VolumeFrame> {
+        &self.volume_rx
     }
 
     pub fn is_running(&self) -> bool {

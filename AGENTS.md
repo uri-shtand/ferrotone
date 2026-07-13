@@ -61,3 +61,4 @@ Key design rule: `ferrotone-core` has zero Tauri dependency — testable in isol
 - `src-tauri/src/main.rs` has `#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]` — do not remove
 - Every feature added must be reflected with a single short line in `README.md` under the relevant section
 - Classes (and Rust structs/traits) should be small and own a single responsibility — follow the Single Responsibility Principle. When planning code changes, first consider whether an existing type has grown too broad; if so, split it before adding new functionality.
+- **Low latency is a core design requirement.** Never buffer more data than necessary. Use `try_send` (not `send`) on bounded channels carrying time-sensitive audio/volume data so the pipeline never blocks on a full receiver — dropping old frames is always preferable to introducing latency.

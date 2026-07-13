@@ -41,6 +41,11 @@ export interface Settings {
   user: UserSettings;
 }
 
+export interface VolumeFrame {
+  rms_level: number;
+  timestamp_ms: number;
+}
+
 export interface DeviceInfo {
   name: string;
   is_default: boolean;
