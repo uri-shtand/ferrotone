@@ -48,6 +48,8 @@ pub async fn start_capture(
         e.to_string()
     })?;
 
+    let noise = &state.settings.noise_cancellation;
+
     let config = CaptureConfig {
         sample_rate: audio.sample_rate,
         buffer_size: audio.buffer_size,
@@ -56,6 +58,10 @@ pub async fn start_capture(
         } else {
             Some(audio.device_name.clone())
         },
+        rms_gate_enabled: noise.rms_gate_enabled,
+        rms_threshold: noise.rms_threshold,
+        confidence_gate_enabled: noise.confidence_gate_enabled,
+        confidence_threshold: noise.confidence_threshold,
     };
 
     let mut capture = CaptureEngine::new(Box::new(detector), config);

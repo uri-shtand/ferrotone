@@ -8,6 +8,7 @@ use cpal::traits::{DeviceTrait, StreamTrait};
 
 use crate::audio::device;
 use crate::error::DetectionError;
+use crate::gate::{ConfidenceGate, RmsGate};
 use crate::pitch::{PitchDetector, PitchFrame};
 
 pub(crate) struct SafeStream(Option<cpal::Stream>);
@@ -29,6 +30,10 @@ pub struct CaptureConfig {
     pub sample_rate: u32,
     pub buffer_size: usize,
     pub device_name: Option<String>,
+    pub rms_gate_enabled: bool,
+    pub rms_threshold: f32,
+    pub confidence_gate_enabled: bool,
+    pub confidence_threshold: f32,
 }
 
 impl Default for CaptureConfig {
@@ -37,6 +42,10 @@ impl Default for CaptureConfig {
             sample_rate: 48000,
             buffer_size: 1024,
             device_name: None,
+            rms_gate_enabled: true,
+            rms_threshold: 0.01,
+            confidence_gate_enabled: true,
+            confidence_threshold: 0.3,
         }
     }
 }
@@ -48,6 +57,8 @@ enum ControlSignal {
 pub struct CaptureEngine {
     detector: Box<dyn PitchDetector>,
     config: CaptureConfig,
+    rms_gate: RmsGate,
+    confidence_gate: ConfidenceGate,
     pitch_tx: Sender<PitchFrame>,
     pitch_rx: Receiver<PitchFrame>,
     control_tx: Sender<ControlSignal>,
@@ -61,6 +72,10 @@ impl CaptureEngine {
         let (pitch_tx, pitch_rx) = bounded(64);
         let (control_tx, _) = bounded(16);
         Self {
+            rms_gate: RmsGate::new(config.rms_threshold)
+                .with_enabled(config.rms_gate_enabled),
+            confidence_gate: ConfidenceGate::new(config.confidence_threshold)
+                .with_enabled(config.confidence_gate_enabled),
             detector,
             config,
             pitch_tx,
@@ -169,6 +184,14 @@ impl CaptureEngine {
             Box::new(crate::pitch::dummy::DummyDetector::new(0.0, 0.0, false)),
         );
         let buffer_size = self.config.buffer_size;
+        let rms_gate = std::mem::replace(
+            &mut self.rms_gate,
+            RmsGate::new(0.01).with_enabled(false),
+        );
+        let confidence_gate = std::mem::replace(
+            &mut self.confidence_gate,
+            ConfidenceGate::new(0.3).with_enabled(false),
+        );
 
         let handle = std::thread::Builder::new()
             .name("dsp-worker".into())
@@ -191,7 +214,11 @@ impl CaptureEngine {
                             let chunk_size = buffer_size.min(buffer.len());
                             if chunk_size >= buffer_size / 2 {
                                 let chunk: Vec<f32> = buffer.drain(..chunk_size).collect();
+                                if !rms_gate.process(&chunk) {
+                                    continue;
+                                }
                                 let frames = detector.process(&chunk);
+                                let frames = confidence_gate.process(frames);
                                 for frame in frames {
                                     let _ = pitch_tx.send(frame);
                                 }
@@ -202,8 +229,9 @@ impl CaptureEngine {
                     }
                 }
 
-                if !buffer.is_empty() {
+                if !buffer.is_empty() && rms_gate.process(&buffer) {
                     let frames = detector.process(&buffer);
+                    let frames = confidence_gate.process(frames);
                     for frame in frames {
                         let _ = pitch_tx.send(frame);
                     }
@@ -243,7 +271,11 @@ impl CaptureEngine {
     }
 
     pub fn feed_audio(&mut self, samples: &[f32]) -> Vec<PitchFrame> {
+        if !self.rms_gate.process(samples) {
+            return Vec::new();
+        }
         let frames = self.detector.process(samples);
+        let frames = self.confidence_gate.process(frames);
         for frame in &frames {
             let _ = self.pitch_tx.send(frame.clone());
         }
