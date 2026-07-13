@@ -9,6 +9,7 @@ const DEFAULT_SETTINGS: Settings = {
     rms_gate_enabled: true, rms_threshold: 0.01,
     confidence_gate_enabled: true, confidence_threshold: 0.3,
     bandpass_enabled: true, bandpass_low: 80, bandpass_high: 1000,
+    rnnoise_enabled: false,
   },
   user: { cache_folder: '', active_profile: 'default' },
 };

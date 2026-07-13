@@ -15,3 +15,4 @@
 * Command line mode
 * Add testing with real voice recordings
 * Download voice samples (free)
+* Add pitch graph over time

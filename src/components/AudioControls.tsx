@@ -11,6 +11,7 @@ interface AudioControlsProps {
   bandpassLow: number;
   bandpassHigh: number;
   noiseCancellationEnabled: boolean;
+  rnnoiseEnabled: boolean;
   deviceName: string;
   devices: DeviceInfo[];
   onInputGainChange: (v: number) => void;
@@ -22,6 +23,7 @@ interface AudioControlsProps {
   onBandpassLowChange: (v: number) => void;
   onBandpassHighChange: (v: number) => void;
   onNoiseCancellationEnabledChange: (v: boolean) => void;
+  onRnnoiseEnabledChange: (v: boolean) => void;
   onDeviceNameChange: (v: string) => void;
   onSave: () => void;
   dirty: boolean;
@@ -116,6 +118,7 @@ export default function AudioControls({
   bandpassLow,
   bandpassHigh,
   noiseCancellationEnabled,
+  rnnoiseEnabled,
   deviceName,
   devices,
   onInputGainChange,
@@ -127,6 +130,7 @@ export default function AudioControls({
   onBandpassLowChange,
   onBandpassHighChange,
   onNoiseCancellationEnabledChange,
+  onRnnoiseEnabledChange,
   onDeviceNameChange,
   onSave,
   dirty,
@@ -228,6 +232,11 @@ export default function AudioControls({
           label="Master"
           value={noiseCancellationEnabled}
           onChange={onNoiseCancellationEnabledChange}
+        />
+        <Toggle
+          label="RNNoise"
+          value={rnnoiseEnabled}
+          onChange={onRnnoiseEnabledChange}
         />
       </Section>
 
