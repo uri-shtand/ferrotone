@@ -1,11 +1,19 @@
 use ferrotone_core::audio::{CaptureConfig, CaptureEngine};
 use ferrotone_core::pitch::dummy::DummyDetector;
 
+fn test_config() -> CaptureConfig {
+    CaptureConfig {
+        rms_gate_enabled: false,
+        confidence_gate_enabled: false,
+        ..CaptureConfig::default()
+    }
+}
+
 #[test]
 fn dummy_through_engine() {
     let engine = CaptureEngine::new(
         Box::new(DummyDetector::new(440.0, 0.9, true)),
-        CaptureConfig::default(),
+        test_config(),
     );
     let rx = engine.pitch_receiver().clone();
 
@@ -25,7 +33,7 @@ fn dummy_through_engine() {
 fn start_stop_cycle() {
     let mut engine = CaptureEngine::new(
         Box::new(DummyDetector::new(440.0, 0.9, true)),
-        CaptureConfig::default(),
+        test_config(),
     );
     // Stopping an unstarted engine should be safe
     assert!(engine.stop().is_ok());
@@ -38,13 +46,17 @@ fn config_defaults() {
     assert_eq!(config.sample_rate, 48000);
     assert_eq!(config.buffer_size, 1024);
     assert!(config.device_name.is_none());
+    assert!(config.rms_gate_enabled);
+    assert!((config.rms_threshold - 0.01).abs() < f32::EPSILON);
+    assert!(config.confidence_gate_enabled);
+    assert!((config.confidence_threshold - 0.3).abs() < f32::EPSILON);
 }
 
 #[test]
 fn capture_engine_new_not_running() {
     let engine = CaptureEngine::new(
         Box::new(DummyDetector::new(440.0, 0.9, true)),
-        CaptureConfig::default(),
+        test_config(),
     );
     assert!(!engine.is_running());
 }
@@ -53,7 +65,7 @@ fn capture_engine_new_not_running() {
 fn dummy_through_engine_multiple_batches() {
     let engine = CaptureEngine::new(
         Box::new(DummyDetector::new(220.0, 0.5, false)),
-        CaptureConfig::default(),
+        test_config(),
     );
     let rx = engine.pitch_receiver().clone();
 

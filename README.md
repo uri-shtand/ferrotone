@@ -18,6 +18,7 @@ to a hyper-fast Rust core, while leveraging Python's robust machine learning eco
 *   **AI Source Separation:** Automatically break down any ingested audio file into a pure isolated `vocals.wav` stem and an instrumental `accompaniment.wav` stem.
 *   **Visual Pitch Analytics:** A fluid, 60 FPS interactive HTML5 Canvas scroll grid mapping your live singing frequency directly against the perfect extracted target pitch timeline.
 *   **Intelligent Pitch Detection:** Utilizes native implementations of the YIN/McLeod Pitch Method (MPM) algorithms to extract raw human vocal parameters with near-zero latency.
+*   **Noise Gating:** RMS volume gate and confidence score gate filter out background noise and low-confidence pitch frames in real-time.
 *   **Interactive Ear Training:** Gamified training screens focusing on scale intervals, hitting precise note progressions, and interval retention.
 
 ---
