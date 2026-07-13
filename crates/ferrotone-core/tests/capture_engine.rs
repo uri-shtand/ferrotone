@@ -46,10 +46,15 @@ fn config_defaults() {
     assert_eq!(config.sample_rate, 48000);
     assert_eq!(config.buffer_size, 1024);
     assert!(config.device_name.is_none());
+    assert!(!config.noise_cancellation_enabled);
+    assert!((config.input_gain - 1.0).abs() < f32::EPSILON);
     assert!(config.rms_gate_enabled);
     assert!((config.rms_threshold - 0.01).abs() < f32::EPSILON);
     assert!(config.confidence_gate_enabled);
     assert!((config.confidence_threshold - 0.3).abs() < f32::EPSILON);
+    assert!(config.bandpass_enabled);
+    assert!((config.bandpass_low - 80.0).abs() < f32::EPSILON);
+    assert!((config.bandpass_high - 1000.0).abs() < f32::EPSILON);
 }
 
 #[test]

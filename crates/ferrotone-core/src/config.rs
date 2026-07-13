@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::ConfigError;
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
     pub audio: AudioSettings,
@@ -12,7 +12,7 @@ pub struct Settings {
     pub user: UserSettings,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AudioSettings {
     pub sample_rate: u32,
     pub buffer_size: usize,
@@ -31,9 +31,10 @@ impl Default for AudioSettings {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NoiseCancellationSettings {
     pub enabled: bool,
+    pub input_gain: f32,
     pub rms_gate_enabled: bool,
     pub rms_threshold: f32,
     pub confidence_gate_enabled: bool,
@@ -47,6 +48,7 @@ impl Default for NoiseCancellationSettings {
     fn default() -> Self {
         Self {
             enabled: false,
+            input_gain: 1.0,
             rms_gate_enabled: true,
             rms_threshold: 0.01,
             confidence_gate_enabled: true,
@@ -58,7 +60,7 @@ impl Default for NoiseCancellationSettings {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UserSettings {
     pub cache_folder: String,
     pub active_profile: String,

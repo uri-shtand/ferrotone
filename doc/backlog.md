@@ -8,3 +8,7 @@
 * Use multiple microphone inputs to get better results
 * Recording
 * Only care about voice frequency and not other noises (noise fi*lt*ering)
+* Recording gate widget
+* Add volume graph that shows how loud the singing is over time.
+* Bandpass filter high should be according to human voice and not 1000 hz
+* Understand why there is jitter
