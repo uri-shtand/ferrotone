@@ -28,6 +28,7 @@ export interface NoiseCancellationSettings {
   bandpass_enabled: boolean;
   bandpass_low: number;
   bandpass_high: number;
+  rnnoise_enabled: boolean;
 }
 
 export interface UserSettings {

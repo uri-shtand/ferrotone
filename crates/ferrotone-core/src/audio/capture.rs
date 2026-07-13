@@ -8,7 +8,7 @@ use cpal::traits::{DeviceTrait, StreamTrait};
 
 use crate::audio::{device, VolumeFrame};
 use crate::error::DetectionError;
-use crate::gate::{apply_gain, compute_rms, BandpassFilter, ConfidenceGate, RmsGate};
+use crate::gate::{apply_gain, compute_rms, BandpassFilter, ConfidenceGate, NoiseSuppressor, RmsGate};
 use crate::pitch::{PitchDetector, PitchFrame};
 
 pub(crate) struct SafeStream(Option<cpal::Stream>);
@@ -39,6 +39,7 @@ pub struct CaptureConfig {
     pub bandpass_enabled: bool,
     pub bandpass_low: f32,
     pub bandpass_high: f32,
+    pub rnnoise_enabled: bool,
 }
 
 impl Default for CaptureConfig {
@@ -56,6 +57,7 @@ impl Default for CaptureConfig {
             bandpass_enabled: true,
             bandpass_low: 80.0,
             bandpass_high: 1000.0,
+            rnnoise_enabled: false,
         }
     }
 }
@@ -70,6 +72,7 @@ pub struct CaptureEngine {
     bandpass: BandpassFilter,
     rms_gate: RmsGate,
     confidence_gate: ConfidenceGate,
+    noise_suppressor: NoiseSuppressor,
     pitch_tx: Sender<PitchFrame>,
     pitch_rx: Receiver<PitchFrame>,
     volume_tx: Sender<VolumeFrame>,
@@ -89,6 +92,8 @@ impl CaptureEngine {
         let gates_enabled = config.noise_cancellation_enabled;
 
         Self {
+            noise_suppressor: NoiseSuppressor::new()
+                .with_enabled(gates_enabled && config.rnnoise_enabled),
             bandpass: BandpassFilter::new(config.bandpass_low, config.bandpass_high, config.sample_rate)
                 .with_enabled(gates_enabled && config.bandpass_enabled),
             rms_gate: RmsGate::new(config.rms_threshold)
@@ -207,6 +212,10 @@ impl CaptureEngine {
         );
         let buffer_size = self.config.buffer_size;
         let input_gain = self.config.input_gain;
+        let mut noise_suppressor = std::mem::replace(
+            &mut self.noise_suppressor,
+            NoiseSuppressor::new().with_enabled(false),
+        );
         let mut bandpass = std::mem::replace(
             &mut self.bandpass,
             BandpassFilter::new(80.0, 1000.0, 48000).with_enabled(false),
@@ -243,6 +252,7 @@ impl CaptureEngine {
                                 let mut chunk: Vec<f32> = buffer.drain(..chunk_size).collect();
 
                                 apply_gain(&mut chunk, input_gain);
+                                noise_suppressor.process(&mut chunk);
                                 bandpass.process(&mut chunk);
 
                                 let rms = compute_rms(&chunk);
@@ -272,6 +282,7 @@ impl CaptureEngine {
 
                 if !buffer.is_empty() {
                     apply_gain(&mut buffer, input_gain);
+                    noise_suppressor.process(&mut buffer);
                     bandpass.process(&mut buffer);
                     let rms = compute_rms(&buffer);
                     let ts = SystemTime::now()
@@ -331,6 +342,7 @@ impl CaptureEngine {
     pub fn feed_audio(&mut self, samples: &[f32]) -> Vec<PitchFrame> {
         let mut chunk = samples.to_vec();
         apply_gain(&mut chunk, self.config.input_gain);
+        self.noise_suppressor.process(&mut chunk);
         self.bandpass.process(&mut chunk);
         if !self.rms_gate.process(&chunk) {
             return Vec::new();

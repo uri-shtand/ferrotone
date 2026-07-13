@@ -60,6 +60,7 @@ function App() {
             bandpassLow={nc.bandpass_low}
             bandpassHigh={nc.bandpass_high}
             noiseCancellationEnabled={nc.enabled}
+            rnnoiseEnabled={nc.rnnoise_enabled}
             deviceName={audio.device_name}
             devices={devices}
             onInputGainChange={(v) => updateNoiseCancellation({ input_gain: v })}
@@ -71,6 +72,7 @@ function App() {
             onBandpassLowChange={(v) => updateNoiseCancellation({ bandpass_low: v })}
             onBandpassHighChange={(v) => updateNoiseCancellation({ bandpass_high: v })}
             onNoiseCancellationEnabledChange={(v) => updateNoiseCancellation({ enabled: v })}
+            onRnnoiseEnabledChange={(v) => updateNoiseCancellation({ rnnoise_enabled: v })}
             onDeviceNameChange={(v) => updateAudio({ device_name: v })}
             onSave={save}
             dirty={dirty}

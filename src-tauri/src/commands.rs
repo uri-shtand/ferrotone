@@ -62,28 +62,29 @@ pub async fn start_capture(
         e.to_string()
     })?;
 
-    let config = CaptureConfig {
-        sample_rate: audio.sample_rate,
-        buffer_size: audio.buffer_size,
-        device_name: if audio.device_name.is_empty() {
-            None
-        } else {
-            Some(audio.device_name.clone())
-        },
-        noise_cancellation_enabled: noise.enabled,
-        input_gain: noise.input_gain,
-        rms_gate_enabled: noise.rms_gate_enabled,
-        rms_threshold: noise.rms_threshold,
-        confidence_gate_enabled: noise.confidence_gate_enabled,
-        confidence_threshold: noise.confidence_threshold,
-        bandpass_enabled: noise.bandpass_enabled,
-        bandpass_low: noise.bandpass_low,
-        bandpass_high: noise.bandpass_high,
-    };
+        let config = CaptureConfig {
+            sample_rate: audio.sample_rate,
+            buffer_size: audio.buffer_size,
+            device_name: if audio.device_name.is_empty() {
+                None
+            } else {
+                Some(audio.device_name.clone())
+            },
+            noise_cancellation_enabled: noise.enabled,
+            input_gain: noise.input_gain,
+            rms_gate_enabled: noise.rms_gate_enabled,
+            rms_threshold: noise.rms_threshold,
+            confidence_gate_enabled: noise.confidence_gate_enabled,
+            confidence_threshold: noise.confidence_threshold,
+            bandpass_enabled: noise.bandpass_enabled,
+            bandpass_low: noise.bandpass_low,
+            bandpass_high: noise.bandpass_high,
+            rnnoise_enabled: noise.rnnoise_enabled,
+        };
 
-    drop(settings);
+        drop(settings);
 
-    let mut capture = CaptureEngine::new(Box::new(detector), config);
+        let mut capture = CaptureEngine::new(Box::new(detector), config);
     let rx = capture.pitch_receiver().clone();
     let vr = capture.volume_receiver().clone();
 
@@ -215,6 +216,7 @@ pub async fn update_settings(
                 bandpass_enabled: noise.bandpass_enabled,
                 bandpass_low: noise.bandpass_low,
                 bandpass_high: noise.bandpass_high,
+                rnnoise_enabled: noise.rnnoise_enabled,
             };
 
             let mut capture = CaptureEngine::new(Box::new(detector), config);

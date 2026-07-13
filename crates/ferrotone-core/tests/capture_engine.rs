@@ -55,6 +55,7 @@ fn config_defaults() {
     assert!(config.bandpass_enabled);
     assert!((config.bandpass_low - 80.0).abs() < f32::EPSILON);
     assert!((config.bandpass_high - 1000.0).abs() < f32::EPSILON);
+    assert!(!config.rnnoise_enabled);
 }
 
 #[test]

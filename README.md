@@ -20,9 +20,11 @@ to a hyper-fast Rust core, while leveraging Python's robust machine learning eco
 *   **Intelligent Pitch Detection:** Utilizes native implementations of the YIN/McLeod Pitch Method (MPM) algorithms to extract raw human vocal parameters with near-zero latency.
 *   **Noise Gating:** RMS volume gate and confidence score gate filter out background noise and low-confidence pitch frames in real-time.
 *   **Volume Graph:** Real-time waveform showing voice loudness over the last 60 seconds (dB scale).
+*   **RNNoise Suppression:** Neural-network-based real-time noise reduction via nnnoiseless.
 *   **Bandpass Pre-Filtering:** Second-order IIR bandpass filter restricts processing to the vocal frequency range (80–1000 Hz default).
 *   **Recording Controls Widget:** Live-adjustable panel for input gain, volume gate, confidence gate, bandpass filter, and device selection with one-click save to disk.
 *   **Interactive Ear Training:** Gamified training screens focusing on scale intervals, hitting precise note progressions, and interval retention.
+*   **Vocal Sample Library:** 62 single-note sustained "ah" vowel samples (C2–C5 male + C3–C5 female) for testing and playback, generated via formant synthesis in `samples/`.
 
 ---
 
@@ -144,6 +146,7 @@ ferrotone/
 │       │   ├── pitch/       #   YIN/MPM/SWIPE' detectors
 │       │   └── music/       #   hz_to_midi, note naming, cents
 │       └── tests/           #   Unit tests
+├── samples/                 # Vocal sample library (62 WAV files + tone_map.json)
 ├── doc/                     # Architecture & design docs
 ├── package.json
 └── README.md

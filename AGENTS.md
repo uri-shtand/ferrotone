@@ -58,6 +58,7 @@ Key design rule: `ferrotone-core` has zero Tauri dependency — testable in isol
 - Tauri managed state via `tauri::State<'_, AppState>` with `Mutex<Option<CaptureEngine>>`
 - Capability permissions in `src-tauri/capabilities/default.json`
 - Vite dev server on port 1420 (strict), ignores `src-tauri/` changes
+- `samples/` contains 62 single-note sustained "ah" vocal WAV files (male C2–C5, female C3–C5) with `tone_map.json` metadata. Generator lives in `crates/sample-gen/`. All files are synthetically generated (formant synthesis), original to the project.
 - `src-tauri/src/main.rs` has `#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]` — do not remove
 - Every feature added must be reflected with a single short line in `README.md` under the relevant section
 - Classes (and Rust structs/traits) should be small and own a single responsibility — follow the Single Responsibility Principle. When planning code changes, first consider whether an existing type has grown too broad; if so, split it before adding new functionality.

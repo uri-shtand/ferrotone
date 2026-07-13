@@ -42,6 +42,7 @@ pub struct NoiseCancellationSettings {
     pub bandpass_enabled: bool,
     pub bandpass_low: f32,
     pub bandpass_high: f32,
+    pub rnnoise_enabled: bool,
 }
 
 impl Default for NoiseCancellationSettings {
@@ -56,6 +57,7 @@ impl Default for NoiseCancellationSettings {
             bandpass_enabled: true,
             bandpass_low: 80.0,
             bandpass_high: 1000.0,
+            rnnoise_enabled: false,
         }
     }
 }
