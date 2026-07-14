@@ -7,16 +7,24 @@ pub struct SwipeDetector {
     tracker: PitchTracker,
     frame_count: u64,
     sample_rate: u32,
+    buffer_size: usize,
+    confidence_threshold: f32,
 }
 
 impl SwipeDetector {
-    pub fn new(sample_rate: u32, buffer_size: usize) -> Result<Self, DetectionError> {
+    pub fn new(
+        sample_rate: u32,
+        buffer_size: usize,
+        confidence_threshold: f32,
+    ) -> Result<Self, DetectionError> {
         let estimator = SwipeEstimator::new()?;
         let tracker = PitchTracker::new(estimator, sample_rate, buffer_size)?;
         Ok(Self {
             tracker,
             frame_count: 0,
             sample_rate,
+            buffer_size,
+            confidence_threshold,
         })
     }
 }
@@ -36,8 +44,8 @@ impl PitchDetector for SwipeDetector {
                 PitchFrame {
                     frequency_hz: pf.pitch_hz,
                     clarity: pf.confidence,
-                    voiced: pf.confidence > 0.3,
-                    timestamp_ms: (self.frame_count * self.sample_rate as u64 / 1024 * 1000
+                    voiced: pf.confidence > self.confidence_threshold,
+                    timestamp_ms: (self.frame_count * self.buffer_size as u64 * 1000
                         / self.sample_rate as u64)
                         .max(1),
                 }

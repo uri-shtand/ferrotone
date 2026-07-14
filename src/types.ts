@@ -3,6 +3,7 @@ export interface PitchFrame {
   note_name: string;
   cents_deviation: number;
   clarity: number;
+  voiced: boolean;
   timestamp_ms: number;
 }
 

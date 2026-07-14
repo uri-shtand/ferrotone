@@ -23,6 +23,7 @@ function centsBarPosition(cents: number): number {
 export default function PitchDisplay({ isCapturing, latestFrame, onStart, onStop }: PitchDisplayProps) {
   const hasFrame = latestFrame !== null && isCapturing;
   const clarity = hasFrame ? latestFrame.clarity : 0;
+  const voiced = hasFrame ? latestFrame.voiced : false;
   const color = hasFrame ? centsColor(latestFrame.cents_deviation, clarity) : '#888';
   const cents = hasFrame ? latestFrame.cents_deviation : 0;
   const noteName = hasFrame ? latestFrame.note_name : '--';
@@ -41,6 +42,9 @@ export default function PitchDisplay({ isCapturing, latestFrame, onStart, onStop
 
       <div className="info-row">
         <span className="frequency">{freq}</span>
+        <span className={`voiced-indicator ${voiced ? 'voiced' : 'unvoiced'}`}>
+          {voiced ? 'Voiced' : 'Unvoiced'}
+        </span>
         <span className="clarity-meter">
           clarity:
           <span className="clarity-bar-track">

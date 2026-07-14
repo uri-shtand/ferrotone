@@ -24,9 +24,9 @@ describe('PitchGraph', () => {
     const now = Date.now();
     const bufferRef = {
       current: [
-        { frequency_hz: 440, note_name: 'A4', cents_deviation: 0, clarity: 0.9, timestamp_ms: now - 2000 },
-        { frequency_hz: 523, note_name: 'C5', cents_deviation: -2, clarity: 0.8, timestamp_ms: now - 1000 },
-        { frequency_hz: 494, note_name: 'B4', cents_deviation: 15, clarity: 0.6, timestamp_ms: now },
+        { frequency_hz: 440, note_name: 'A4', cents_deviation: 0, clarity: 0.9, voiced: true, timestamp_ms: now - 2000 },
+        { frequency_hz: 523, note_name: 'C5', cents_deviation: -2, clarity: 0.8, voiced: true, timestamp_ms: now - 1000 },
+        { frequency_hz: 494, note_name: 'B4', cents_deviation: 15, clarity: 0.6, voiced: true, timestamp_ms: now },
       ],
     };
     const { container } = render(

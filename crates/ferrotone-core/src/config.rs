@@ -56,7 +56,7 @@ impl Default for NoiseCancellationSettings {
             confidence_threshold: 0.3,
             bandpass_enabled: true,
             bandpass_low: 80.0,
-            bandpass_high: 1000.0,
+            bandpass_high: 1600.0,
             rnnoise_enabled: false,
         }
     }

@@ -17,6 +17,7 @@ pub struct PitchFrameEvent {
     pub note_name: String,
     pub cents_deviation: f32,
     pub clarity: f32,
+    pub voiced: bool,
     pub timestamp_ms: u64,
 }
 
@@ -57,7 +58,12 @@ pub async fn start_capture(
         audio.sample_rate,
         audio.buffer_size
     );
-    let detector = SwipeDetector::new(audio.sample_rate, audio.buffer_size).map_err(|e| {
+    let detector = SwipeDetector::new(
+        audio.sample_rate,
+        audio.buffer_size,
+        noise.confidence_threshold,
+    )
+    .map_err(|e| {
         tracing::error!(error = %e, "failed to create SwipeDetector");
         e.to_string()
     })?;
@@ -110,6 +116,7 @@ pub async fn start_capture(
                 note_name: note,
                 cents_deviation: cents,
                 clarity: frame.clarity,
+                voiced: frame.voiced,
                 timestamp_ms: frame.timestamp_ms,
             };
             if let Err(e) = app.emit("pitch-frame", payload) {
@@ -196,8 +203,12 @@ pub async fn update_settings(
             let audio = &settings.audio;
             let noise = &settings.noise_cancellation;
 
-            let detector = SwipeDetector::new(audio.sample_rate, audio.buffer_size)
-                .map_err(|e| e.to_string())?;
+            let detector = SwipeDetector::new(
+                audio.sample_rate,
+                audio.buffer_size,
+                noise.confidence_threshold,
+            )
+            .map_err(|e| e.to_string())?;
 
             let config = CaptureConfig {
                 sample_rate: audio.sample_rate,
@@ -238,6 +249,7 @@ pub async fn update_settings(
                         note_name: note,
                         cents_deviation: cents,
                         clarity: frame.clarity,
+                        voiced: frame.voiced,
                         timestamp_ms: frame.timestamp_ms,
                     };
                     if let Err(e) = app.emit("pitch-frame", payload) {

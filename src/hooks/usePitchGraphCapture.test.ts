@@ -29,8 +29,8 @@ describe('usePitchGraphCapture', () => {
     const { result } = renderHook(() => usePitchGraphCapture(true));
 
     await act(async () => {
-      eventCallback?.({ payload: { frequency_hz: 440, note_name: 'A4', cents_deviation: 0, clarity: 0.9, timestamp_ms: 1000 } });
-      eventCallback?.({ payload: { frequency_hz: 523, note_name: 'C5', cents_deviation: -2, clarity: 0.8, timestamp_ms: 1001 } });
+      eventCallback?.({ payload: { frequency_hz: 440, note_name: 'A4', cents_deviation: 0, clarity: 0.9, voiced: true, timestamp_ms: 1000 } });
+      eventCallback?.({ payload: { frequency_hz: 523, note_name: 'C5', cents_deviation: -2, clarity: 0.8, voiced: true, timestamp_ms: 1001 } });
     });
 
     expect(result.current.bufferRef.current).toHaveLength(2);
@@ -51,7 +51,7 @@ describe('usePitchGraphCapture', () => {
     );
 
     await act(async () => {
-      eventCallback?.({ payload: { frequency_hz: 440, note_name: 'A4', cents_deviation: 0, clarity: 0.9, timestamp_ms: 1000 } });
+      eventCallback?.({ payload: { frequency_hz: 440, note_name: 'A4', cents_deviation: 0, clarity: 0.9, voiced: true, timestamp_ms: 1000 } });
     });
     expect(result.current.bufferRef.current).toHaveLength(1);
 
@@ -73,8 +73,8 @@ describe('usePitchGraphCapture', () => {
     const { result } = renderHook(() => usePitchGraphCapture(true));
 
     await act(async () => {
-      eventCallback?.({ payload: { frequency_hz: 440, note_name: 'A4', cents_deviation: 0, clarity: 0.9, timestamp_ms: now - 65_000 } });
-      eventCallback?.({ payload: { frequency_hz: 523, note_name: 'C5', cents_deviation: -2, clarity: 0.8, timestamp_ms: now - 5_000 } });
+      eventCallback?.({ payload: { frequency_hz: 440, note_name: 'A4', cents_deviation: 0, clarity: 0.9, voiced: true, timestamp_ms: now - 65_000 } });
+      eventCallback?.({ payload: { frequency_hz: 523, note_name: 'C5', cents_deviation: -2, clarity: 0.8, voiced: true, timestamp_ms: now - 5_000 } });
     });
 
     expect(result.current.bufferRef.current).toHaveLength(2);

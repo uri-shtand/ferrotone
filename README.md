@@ -6,7 +6,7 @@ Built with **Tauri**, **Rust**, **React/TypeScript**, and **Python**.
 
 ---
 
-##  Overview
+## Overview
 
 FerroTone is designed to bridge the gap between gamified singing experiences and professional vocal coaching. 
 By utilizing a hybrid architecture, the application offloads heavy Digital Signal Processing (DSP) and native audio device integration
@@ -14,45 +14,30 @@ to a hyper-fast Rust core, while leveraging Python's robust machine learning eco
 
 ### Core Features
 
-*   **Native System Audio Loopback:** Capture music streams globally (Spotify, YouTube) straight from your system speakers via Windows WASAPI Loopback / macOS ScreenCaptureKit with zero virtual routing setups.
-*   **AI Source Separation:** Automatically break down any ingested audio file into a pure isolated `vocals.wav` stem and an instrumental `accompaniment.wav` stem.
-*   **Visual Pitch Analytics:** A fluid, 60 FPS interactive HTML5 Canvas scroll grid mapping your live singing frequency directly against the perfect extracted target pitch timeline.
+*   (In work) **Visual Pitch Analytics:** A fluid, 60 FPS interactive HTML5 Canvas scroll grid mapping your live singing frequency directly against the perfect extracted target pitch timeline.
 *   **Intelligent Pitch Detection:** Utilizes native implementations of the YIN/McLeod Pitch Method (MPM) algorithms to extract raw human vocal parameters with near-zero latency.
-*   **Noise Gating:** RMS volume gate and confidence score gate filter out background noise and low-confidence pitch frames in real-time.
-*   **Volume Graph:** Real-time waveform showing voice loudness over the last 60 seconds (dB scale).
-*   **Pitch Graph:** Real-time pitch trajectory over the last 60 seconds (MIDI note scale, cents-based coloring).
-*   **RNNoise Suppression:** Neural-network-based real-time noise reduction via nnnoiseless.
-*   **Bandpass Pre-Filtering:** Second-order IIR bandpass filter restricts processing to the vocal frequency range (80–1000 Hz default).
+*   (In work) **Volume Graph:** Real-time waveform showing voice loudness over the last 60 seconds (dB scale).
+*   (In work) **Pitch Graph:** Real-time pitch trajectory over the last 60 seconds (MIDI note scale, cents-based coloring).
 *   **Recording Controls Widget:** Live-adjustable panel for input gain, volume gate, confidence gate, bandpass filter, and device selection with one-click save to disk.
+
+### Input Engine Pipeline (applied in order):
+
+*   **Input Gain** — Linear amplitude scaling of raw mic samples.
+*   **RNNoise Suppression** — Neural-network-based real-time noise reduction via nnnoiseless.
+*   **Bandpass Pre-Filtering** — Second-order IIR bandpass filter restricts processing to the vocal frequency range (80–1600 Hz default).
+*   **RMS Volume Gate** — Discards silent or quiet frames below a configurable RMS threshold (default 0.01).
+*   **Pitch Detection** — SWIPE' algorithm extracts frequency, clarity, and voicing from the filtered signal.
+*   **Confidence Gate** — Discards frames where clarity (confidence score) falls below a configurable threshold (default 0.3).
+*   **Pitch Stabilization** — Median filter + octave-jump guard + one-pole smoother removes jitter from raw pitch estimates for clean visual tracking.
+
+### Planned features:
+
 *   **Interactive Ear Training:** Gamified training screens focusing on scale intervals, hitting precise note progressions, and interval retention.
 *   **Vocal Sample Library:** 62 single-note sustained "ah" vowel samples (C2–C5 male + C3–C5 female) for testing and playback, generated via formant synthesis in `samples/`.
+*   **Native System Audio Loopback:** Capture music streams globally (Spotify, YouTube) straight from your system speakers via Windows WASAPI Loopback / macOS ScreenCaptureKit with zero virtual routing setups.
+*   **AI Source Separation:** Automatically break down any ingested audio file into a pure isolated `vocals.wav` stem and an instrumental `accompaniment.wav` stem.
 
 ---
-
-##  Architecture
-
-FerroTone utilizes a decoupled, three-tier architecture to maximize computational efficiency while keeping the binary payload small:
-
-```text
-┌────────────────────────────────────────────────────────┐
-│                   FRONTEND (UI LAYER)                  │
-│                React / TypeScript / Vite               │
-│  • 60 FPS Scrolling Visual Target Grid (Canvas)        │
-│  • Interactive Training Modules & Dashboard            │
-└───────────────────────────┬────────────────────────────┘
-                            │ Tauri IPC (Commands/Events)
-┌───────────────────────────▼────────────────────────────┐
-│                    TAURI CORE (RUST)                   │
-│  • Native Mic Capture Engine (via `cpal`)              │
-│  • Real-Time Pitch Analysis DSP (YIN/MPM algorithms)    │
-│  • Asynchronous Thread Management & Sidecar Controller │
-└───────────────────────────┬────────────────────────────┘
-                            │ Local Localhost Socket / IPC
-┌───────────────────────────▼────────────────────────────┐
-│                  AI ENGINE (PYTHON SIDECAR)            │
-│  • Audio Demixing Models (Spleeter / Demucs)           │
-│  • Static Track Target Pitch Profile Analysis          │
-└────────────────────────────────────────────────────────┘
 
 ## Tech Stack
 
