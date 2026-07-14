@@ -17,5 +17,4 @@
 * Each note has a range (lower and upper) and not just a single point. And you have to stay in the range for X ms for it to count.
 * Voice Detect button - instructs the user to be quiet. Then sing low then sing high. And it learns about the user
 * Profiles - with toml file (support for multiple profiles)
-* Pitch is only relevant for a minimum volume
 * Download existing open source projects and use them for comparison

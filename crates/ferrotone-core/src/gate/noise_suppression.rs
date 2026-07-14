@@ -10,6 +10,12 @@ pub struct NoiseSuppressor {
     output_buf: Vec<f32>,
 }
 
+impl Default for NoiseSuppressor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NoiseSuppressor {
     pub fn new() -> Self {
         let frame_size = DenoiseState::FRAME_SIZE;

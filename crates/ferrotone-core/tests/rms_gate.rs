@@ -35,6 +35,24 @@ fn rms_passes_loud_signal() {
 }
 
 #[test]
+fn rms_gate_works_without_noise_cancellation_master() {
+    let mut engine = CaptureEngine::new(
+        Box::new(DummyDetector::new(440.0, 0.9, true)),
+        CaptureConfig {
+            noise_cancellation_enabled: false,
+            rms_gate_enabled: true,
+            rms_threshold: 0.01,
+            ..CaptureConfig::default()
+        },
+    );
+    let frames = engine.feed_audio(&[0.0; 1024]);
+    assert!(
+        frames.is_empty(),
+        "RMS gate should gate silence even when noise_cancellation is off"
+    );
+}
+
+#[test]
 fn rms_gate_disabled_passes_silence() {
     let config = CaptureConfig {
         noise_cancellation_enabled: true,

@@ -97,7 +97,7 @@ impl CaptureEngine {
             bandpass: BandpassFilter::new(config.bandpass_low, config.bandpass_high, config.sample_rate)
                 .with_enabled(gates_enabled && config.bandpass_enabled),
             rms_gate: RmsGate::new(config.rms_threshold)
-                .with_enabled(gates_enabled && config.rms_gate_enabled),
+                .with_enabled(config.rms_gate_enabled),
             confidence_gate: ConfidenceGate::new(config.confidence_threshold)
                 .with_enabled(gates_enabled && config.confidence_gate_enabled),
             detector,
