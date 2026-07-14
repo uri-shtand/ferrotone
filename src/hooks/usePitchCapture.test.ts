@@ -39,6 +39,7 @@ describe('usePitchCapture', () => {
       note_name: 'A4',
       cents_deviation: 2.3,
       clarity: 0.94,
+      voiced: true,
       timestamp_ms: 1000,
     };
 
@@ -66,6 +67,7 @@ describe('usePitchCapture', () => {
             note_name: 'A4',
             cents_deviation: 0,
             clarity: 0.9,
+            voiced: true,
             timestamp_ms: i * 10,
           },
         });

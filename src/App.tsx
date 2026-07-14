@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import AudioControls from './components/AudioControls';
 import PitchDisplay from './components/PitchDisplay';
+import PitchGraph from './components/PitchGraph';
 import VolumeGraph from './components/VolumeGraph';
 import { useAudioSettings } from './hooks/useAudioSettings';
 import { usePitchCapture } from './hooks/usePitchCapture';
+import { usePitchGraphCapture } from './hooks/usePitchGraphCapture';
 import { useVolumeCapture } from './hooks/useVolumeCapture';
 import './App.css';
 
@@ -19,7 +21,8 @@ function App() {
     refreshDevices,
   } = useAudioSettings();
 
-  const { bufferRef } = useVolumeCapture(isCapturing);
+  const { bufferRef: volumeBufferRef } = useVolumeCapture(isCapturing);
+  const { bufferRef: pitchBufferRef } = usePitchGraphCapture(isCapturing);
 
   const [showControls, setShowControls] = useState(true);
   const nc = settings.noise_cancellation;
@@ -79,7 +82,8 @@ function App() {
           />
         )}
       </div>
-      <VolumeGraph bufferRef={bufferRef} isCapturing={isCapturing} />
+      <VolumeGraph bufferRef={volumeBufferRef} isCapturing={isCapturing} />
+      <PitchGraph bufferRef={pitchBufferRef} isCapturing={isCapturing} />
     </main>
   );
 }

@@ -126,7 +126,7 @@ mod tests {
 
     #[test]
     fn disabled_passes_through() {
-        let mut filter = BandpassFilter::new(80.0, 1000.0, 48000).with_enabled(false);
+        let mut filter = BandpassFilter::new(80.0, 1600.0, 48000).with_enabled(false);
         let mut input = sine_wave(440.0, 48000, 1024);
         let original = input.clone();
         filter.process(&mut input);
@@ -158,7 +158,7 @@ mod tests {
 
     #[test]
     fn in_band_passes() {
-        let mut filter = BandpassFilter::new(80.0, 1000.0, 48000);
+        let mut filter = BandpassFilter::new(80.0, 1600.0, 48000);
         let mut input = sine_wave(440.0, 48000, 4096);
         filter.process(&mut input);
         let rms = compute_rms(&input);
@@ -167,7 +167,7 @@ mod tests {
 
     #[test]
     fn recalc_on_param_change() {
-        let mut filter = BandpassFilter::new(80.0, 1000.0, 48000);
+        let mut filter = BandpassFilter::new(80.0, 1600.0, 48000);
         let mut input = sine_wave(440.0, 48000, 1024);
         filter.process(&mut input);
         let rms_before = compute_rms(&input);
@@ -183,7 +183,7 @@ mod tests {
 
     #[test]
     fn empty_buffer_no_panic() {
-        let mut filter = BandpassFilter::new(80.0, 1000.0, 48000);
+        let mut filter = BandpassFilter::new(80.0, 1600.0, 48000);
         let mut empty: Vec<f32> = vec![];
         filter.process(&mut empty);
     }

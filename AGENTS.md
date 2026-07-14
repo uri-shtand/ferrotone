@@ -2,13 +2,13 @@
 
 ## Project
 
-Tauri v2 desktop app for real-time vocal pitch training. Currently at starter-template stage — the `doc/` directory contains the planned architecture but nothing beyond the scaffold is implemented yet.
+Tauri v2 desktop app for real-time vocal pitch training with active DSP pipeline in `ferrotone-core` (SWIPE' pitch detection, bandpass filter, RMS gate, confidence gate, pitch stabilizer).
 
 ## Stack
 
 - **Frontend**: React 19, TypeScript 5.8, Vite 7 (`src/`)
 - **Backend**: Tauri v2, Rust (edition 2021) (`src-tauri/`)
-- **Planned**: `crates/ferrotone-core/` (pure Rust crate, no Tauri dep) — not yet created
+- **Backend**: `crates/ferrotone-core/` (pure Rust crate, no Tauri dep)
 
 ## Commands
 
@@ -32,9 +32,9 @@ Three-tier design documented in `doc/PHASE1.md`:
 ```
 src/                          # React/TS frontend
 src-tauri/                    # Tauri shell (thin IPC layer)
-crates/ferrotone-core/        # Pure Rust crate (not yet created)
+crates/ferrotone-core/        # Pure Rust crate (no Tauri dep)
   ├── audio/                  #   cpal capture engine
-  ├── pitch/                  #   PitchDetector trait, SWIPE' impl, DummyDetector
+  ├── pitch/                  #   PitchDetector trait, SWIPE' impl, DummyDetector, StageDStabilizer
   └── music/                  #   hz_to_midi, midi_to_note_name, cents_off
 ```
 

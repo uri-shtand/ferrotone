@@ -12,7 +12,7 @@ fn generate_sine(frequency_hz: f32, sample_rate: u32, num_samples: usize) -> Vec
 
 #[test]
 fn sine_a4_440hz() {
-    let mut detector = SwipeDetector::new(48000, 1024).unwrap();
+    let mut detector = SwipeDetector::new(48000, 1024, 0.3).unwrap();
     // Feed plenty of audio for the tracker to stabilize
     let samples = generate_sine(440.0, 48000, 96000);
     let frames = detector.process(&samples);
@@ -33,7 +33,7 @@ fn sine_a4_440hz() {
 
 #[test]
 fn sine_c4_261hz() {
-    let mut detector = SwipeDetector::new(48000, 1024).unwrap();
+    let mut detector = SwipeDetector::new(48000, 1024, 0.3).unwrap();
     let samples = generate_sine(261.63, 48000, 96000);
     let frames = detector.process(&samples);
     assert!(!frames.is_empty(), "should produce pitch frames");
@@ -52,7 +52,7 @@ fn sine_c4_261hz() {
 
 #[test]
 fn sine_silence_returns_low_confidence() {
-    let mut detector = SwipeDetector::new(48000, 1024).unwrap();
+    let mut detector = SwipeDetector::new(48000, 1024, 0.3).unwrap();
     let samples = vec![0.0; 48000];
     let frames = detector.process(&samples);
     if !frames.is_empty() {
@@ -68,7 +68,7 @@ fn sine_silence_returns_low_confidence() {
 
 #[test]
 fn swipe_detector_reset() {
-    let mut detector = SwipeDetector::new(48000, 1024).unwrap();
+    let mut detector = SwipeDetector::new(48000, 1024, 0.3).unwrap();
     let samples = generate_sine(440.0, 48000, 48000);
     let frames_before = detector.process(&samples);
     detector.reset();
@@ -79,7 +79,7 @@ fn swipe_detector_reset() {
 
 #[test]
 fn swipe_detector_reasonable_values() {
-    let mut detector = SwipeDetector::new(48000, 1024).unwrap();
+    let mut detector = SwipeDetector::new(48000, 1024, 0.3).unwrap();
     let samples = generate_sine(440.0, 48000, 96000);
     let frames = detector.process(&samples);
     assert!(!frames.is_empty());

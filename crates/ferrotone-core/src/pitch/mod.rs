@@ -1,4 +1,5 @@
 pub mod dummy;
+pub mod stabilizer;
 pub mod swipe;
 
 use serde::{Deserialize, Serialize};

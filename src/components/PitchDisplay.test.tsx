@@ -27,6 +27,7 @@ describe('PitchDisplay', () => {
           note_name: 'A4',
           cents_deviation: 2.3,
           clarity: 0.94,
+          voiced: true,
           timestamp_ms: 1000,
         }}
         onStart={vi.fn()}
@@ -67,6 +68,7 @@ describe('PitchDisplay', () => {
           note_name: 'A4',
           cents_deviation: 0,
           clarity: 0.9,
+          voiced: true,
           timestamp_ms: 0,
         }}
         onStart={vi.fn()}
@@ -87,6 +89,7 @@ describe('PitchDisplay', () => {
           note_name: 'A4',
           cents_deviation: 0,
           clarity: 0.9,
+          voiced: true,
           timestamp_ms: 100,
         }}
         onStart={vi.fn()}
@@ -107,6 +110,7 @@ describe('PitchDisplay', () => {
           note_name: 'A4',
           cents_deviation: -19.6,
           clarity: 0.85,
+          voiced: true,
           timestamp_ms: 500,
         }}
         onStart={vi.fn()}

@@ -9,7 +9,7 @@ use cpal::traits::{DeviceTrait, StreamTrait};
 use crate::audio::{device, VolumeFrame};
 use crate::error::DetectionError;
 use crate::gate::{apply_gain, compute_rms, BandpassFilter, ConfidenceGate, NoiseSuppressor, RmsGate};
-use crate::pitch::{PitchDetector, PitchFrame};
+use crate::pitch::{stabilizer::StageDStabilizer, PitchDetector, PitchFrame};
 
 pub(crate) struct SafeStream(Option<cpal::Stream>);
 unsafe impl Send for SafeStream {}
@@ -56,7 +56,7 @@ impl Default for CaptureConfig {
             confidence_threshold: 0.3,
             bandpass_enabled: true,
             bandpass_low: 80.0,
-            bandpass_high: 1000.0,
+            bandpass_high: 1600.0,
             rnnoise_enabled: false,
         }
     }
@@ -73,6 +73,7 @@ pub struct CaptureEngine {
     rms_gate: RmsGate,
     confidence_gate: ConfidenceGate,
     noise_suppressor: NoiseSuppressor,
+    stabilizer: StageDStabilizer,
     pitch_tx: Sender<PitchFrame>,
     pitch_rx: Receiver<PitchFrame>,
     volume_tx: Sender<VolumeFrame>,
@@ -97,9 +98,10 @@ impl CaptureEngine {
             bandpass: BandpassFilter::new(config.bandpass_low, config.bandpass_high, config.sample_rate)
                 .with_enabled(gates_enabled && config.bandpass_enabled),
             rms_gate: RmsGate::new(config.rms_threshold)
-                .with_enabled(gates_enabled && config.rms_gate_enabled),
+                .with_enabled(config.rms_gate_enabled),
             confidence_gate: ConfidenceGate::new(config.confidence_threshold)
                 .with_enabled(gates_enabled && config.confidence_gate_enabled),
+            stabilizer: StageDStabilizer::new(),
             detector,
             config,
             pitch_tx,
@@ -224,9 +226,13 @@ impl CaptureEngine {
             &mut self.rms_gate,
             RmsGate::new(0.01).with_enabled(false),
         );
-        let confidence_gate = std::mem::replace(
+        let mut confidence_gate = std::mem::replace(
             &mut self.confidence_gate,
             ConfidenceGate::new(0.3).with_enabled(false),
+        );
+        let mut stabilizer = std::mem::replace(
+            &mut self.stabilizer,
+            StageDStabilizer::new(),
         );
 
         let handle = std::thread::Builder::new()
@@ -270,8 +276,17 @@ impl CaptureEngine {
                                 }
                                 let frames = detector.process(&chunk);
                                 let frames = confidence_gate.process(frames);
-                                for frame in frames {
-                                    let _ = pitch_tx.send(frame);
+                                if frames.is_empty() {
+                                    stabilizer.process(None);
+                                }
+                                for frame in &frames {
+                                    if let Some(stable_hz) = stabilizer.process(Some(frame.frequency_hz)) {
+                                        let stable_frame = PitchFrame {
+                                            frequency_hz: stable_hz,
+                                            ..frame.clone()
+                                        };
+                                        let _ = pitch_tx.send(stable_frame);
+                                    }
                                 }
                             }
                         }
@@ -296,8 +311,17 @@ impl CaptureEngine {
                     if rms_gate.process(&buffer) {
                         let frames = detector.process(&buffer);
                         let frames = confidence_gate.process(frames);
-                        for frame in frames {
-                            let _ = pitch_tx.send(frame);
+                        if frames.is_empty() {
+                            stabilizer.process(None);
+                        }
+                        for frame in &frames {
+                            if let Some(stable_hz) = stabilizer.process(Some(frame.frequency_hz)) {
+                                let stable_frame = PitchFrame {
+                                    frequency_hz: stable_hz,
+                                    ..frame.clone()
+                                };
+                                let _ = pitch_tx.send(stable_frame);
+                            }
                         }
                     }
                 }
@@ -349,10 +373,21 @@ impl CaptureEngine {
         }
         let frames = self.detector.process(&chunk);
         let frames = self.confidence_gate.process(frames);
-        for frame in &frames {
-            let _ = self.pitch_tx.send(frame.clone());
+        if frames.is_empty() {
+            self.stabilizer.process(None);
         }
-        frames
+        let mut stable_frames = Vec::with_capacity(frames.len());
+        for frame in &frames {
+            if let Some(stable_hz) = self.stabilizer.process(Some(frame.frequency_hz)) {
+                let stable_frame = PitchFrame {
+                    frequency_hz: stable_hz,
+                    ..frame.clone()
+                };
+                let _ = self.pitch_tx.send(stable_frame.clone());
+                stable_frames.push(stable_frame);
+            }
+        }
+        stable_frames
     }
 
     pub fn pitch_sender(&self) -> Sender<PitchFrame> {

@@ -33,7 +33,7 @@ confidence_gate_enabled = true
 confidence_threshold = 0.3
 bandpass_enabled = true
 bandpass_low = 80.0
-bandpass_high = 1000.0
+bandpass_high = 1600.0
 
 [user]
 cache_folder = ""
@@ -63,7 +63,7 @@ active_profile = "default"
 | `confidence_threshold` | float | `0.3` | Minimum clarity score (0.0–1.0) to pass a pitch frame |
 | `bandpass_enabled` | bool | `true` | Enable bandpass pre-filtering |
 | `bandpass_low` | float | `80.0` | Bandpass low cutoff (Hz) |
-| `bandpass_high` | float | `1000.0` | Bandpass high cutoff (Hz) |
+| `bandpass_high` | float | `1600.0` | Bandpass high cutoff (Hz) |
 
 ### `[user]`
 
