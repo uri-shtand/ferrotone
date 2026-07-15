@@ -1,12 +1,15 @@
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use crossbeam_channel::{Receiver, RecvTimeoutError};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
 
 use ferrotone_core::audio::{device::AudioDeviceInfo, CaptureConfig, CaptureEngine};
 use ferrotone_core::config::Settings;
 use ferrotone_core::music::{
-    cents_off, hz_to_midi, midi_to_note_name, nearest_equal_tempered_freq,
+    cents_off, hz_to_midi, midi_to_note_name, nearest_equal_tempered_freq, NoteSegmenter,
 };
-use ferrotone_core::pitch::swipe::SwipeDetector;
+use ferrotone_core::pitch::{swipe::SwipeDetector, PitchFrame};
 
 use crate::state::AppState;
 
@@ -26,6 +29,71 @@ pub struct PitchFrameEvent {
 pub struct VolumeFrameEvent {
     pub rms_level: f32,
     pub timestamp_ms: u64,
+}
+
+fn spawn_pitch_forwarder(rx: Receiver<PitchFrame>, app: AppHandle) {
+    std::thread::spawn(move || {
+        tracing::debug!("pitch event-forwarder thread started");
+        let mut segmenter = NoteSegmenter::new();
+        let hold_ms = segmenter.hold_silence_ms;
+
+        loop {
+            match rx.recv_timeout(Duration::from_millis(hold_ms)) {
+                Ok(frame) => {
+                    let note = midi_to_note_name(hz_to_midi(frame.frequency_hz));
+                    let cents = cents_off(
+                        frame.frequency_hz,
+                        nearest_equal_tempered_freq(frame.frequency_hz),
+                    );
+                    let payload = PitchFrameEvent {
+                        frequency_hz: frame.frequency_hz,
+                        note_name: note,
+                        cents_deviation: cents,
+                        clarity: frame.clarity,
+                        voiced: frame.voiced,
+                        timestamp_ms: frame.timestamp_ms,
+                    };
+                    if let Err(e) = app.emit("pitch-frame", payload) {
+                        tracing::warn!(error = %e, "failed to emit pitch-frame event");
+                    }
+
+                    for event in segmenter.process(
+                        frame.frequency_hz,
+                        frame.clarity,
+                        frame.voiced,
+                        frame.timestamp_ms,
+                    ) {
+                        if let Err(e) = app.emit("note-event", &event) {
+                            tracing::warn!(error = %e, "failed to emit note-event");
+                        }
+                    }
+                }
+                Err(RecvTimeoutError::Timeout) => {
+                    let now = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_millis() as u64;
+                    for event in segmenter.flush(now) {
+                        if let Err(e) = app.emit("note-event", &event) {
+                            tracing::warn!(error = %e, "failed to emit note-event");
+                        }
+                    }
+                }
+                Err(RecvTimeoutError::Disconnected) => break,
+            }
+        }
+
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
+        for event in segmenter.flush(now) {
+            if let Err(e) = app.emit("note-event", &event) {
+                tracing::warn!(error = %e, "failed to emit note-event");
+            }
+        }
+        tracing::debug!("pitch event-forwarder thread exiting");
+    });
 }
 
 #[tauri::command]
@@ -68,29 +136,29 @@ pub async fn start_capture(
         e.to_string()
     })?;
 
-        let config = CaptureConfig {
-            sample_rate: audio.sample_rate,
-            buffer_size: audio.buffer_size,
-            device_name: if audio.device_name.is_empty() {
-                None
-            } else {
-                Some(audio.device_name.clone())
-            },
-            noise_cancellation_enabled: noise.enabled,
-            input_gain: noise.input_gain,
-            rms_gate_enabled: noise.rms_gate_enabled,
-            rms_threshold: noise.rms_threshold,
-            confidence_gate_enabled: noise.confidence_gate_enabled,
-            confidence_threshold: noise.confidence_threshold,
-            bandpass_enabled: noise.bandpass_enabled,
-            bandpass_low: noise.bandpass_low,
-            bandpass_high: noise.bandpass_high,
-            rnnoise_enabled: noise.rnnoise_enabled,
-        };
+    let config = CaptureConfig {
+        sample_rate: audio.sample_rate,
+        buffer_size: audio.buffer_size,
+        device_name: if audio.device_name.is_empty() {
+            None
+        } else {
+            Some(audio.device_name.clone())
+        },
+        noise_cancellation_enabled: noise.enabled,
+        input_gain: noise.input_gain,
+        rms_gate_enabled: noise.rms_gate_enabled,
+        rms_threshold: noise.rms_threshold,
+        confidence_gate_enabled: noise.confidence_gate_enabled,
+        confidence_threshold: noise.confidence_threshold,
+        bandpass_enabled: noise.bandpass_enabled,
+        bandpass_low: noise.bandpass_low,
+        bandpass_high: noise.bandpass_high,
+        rnnoise_enabled: noise.rnnoise_enabled,
+    };
 
-        drop(settings);
+    drop(settings);
 
-        let mut capture = CaptureEngine::new(Box::new(detector), config);
+    let mut capture = CaptureEngine::new(Box::new(detector), config);
     let rx = capture.pitch_receiver().clone();
     let vr = capture.volume_receiver().clone();
 
@@ -100,31 +168,8 @@ pub async fn start_capture(
         e.to_string()
     })?;
 
-    let app = app_handle.clone();
     let app_v = app_handle.clone();
-    tracing::debug!("spawning event-forwarder threads");
-    std::thread::spawn(move || {
-        tracing::debug!("pitch event-forwarder thread started");
-        while let Ok(frame) = rx.recv() {
-            let note = midi_to_note_name(hz_to_midi(frame.frequency_hz));
-            let cents = cents_off(
-                frame.frequency_hz,
-                nearest_equal_tempered_freq(frame.frequency_hz),
-            );
-            let payload = PitchFrameEvent {
-                frequency_hz: frame.frequency_hz,
-                note_name: note,
-                cents_deviation: cents,
-                clarity: frame.clarity,
-                voiced: frame.voiced,
-                timestamp_ms: frame.timestamp_ms,
-            };
-            if let Err(e) = app.emit("pitch-frame", payload) {
-                tracing::warn!(error = %e, "failed to emit pitch-frame event");
-            }
-        }
-        tracing::debug!("pitch event-forwarder thread exiting");
-    });
+    spawn_pitch_forwarder(rx, app_handle);
     std::thread::spawn(move || {
         tracing::debug!("volume event-forwarder thread started");
         while let Ok(frame) = vr.recv() {
@@ -235,28 +280,8 @@ pub async fn update_settings(
             let vr = capture.volume_receiver().clone();
             capture.start().map_err(|e| e.to_string())?;
 
-            let app = app_handle.clone();
             let app_v = app_handle.clone();
-            std::thread::spawn(move || {
-                while let Ok(frame) = rx.recv() {
-                    let note = midi_to_note_name(hz_to_midi(frame.frequency_hz));
-                    let cents = cents_off(
-                        frame.frequency_hz,
-                        nearest_equal_tempered_freq(frame.frequency_hz),
-                    );
-                    let payload = PitchFrameEvent {
-                        frequency_hz: frame.frequency_hz,
-                        note_name: note,
-                        cents_deviation: cents,
-                        clarity: frame.clarity,
-                        voiced: frame.voiced,
-                        timestamp_ms: frame.timestamp_ms,
-                    };
-                    if let Err(e) = app.emit("pitch-frame", payload) {
-                        tracing::warn!(error = %e, "failed to emit pitch-frame event");
-                    }
-                }
-            });
+            spawn_pitch_forwarder(rx, app_handle);
             std::thread::spawn(move || {
                 while let Ok(frame) = vr.recv() {
                     let payload = VolumeFrameEvent {

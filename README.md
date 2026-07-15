@@ -18,6 +18,7 @@ to a hyper-fast Rust core, while leveraging Python's robust machine learning eco
 *   **Intelligent Pitch Detection:** Utilizes native implementations of the YIN/McLeod Pitch Method (MPM) algorithms to extract raw human vocal parameters with near-zero latency.
 *   (In work) **Volume Graph:** Real-time waveform showing voice loudness over the last 60 seconds (dB scale).
 *   (In work) **Pitch Graph:** Real-time pitch trajectory over the last 60 seconds (MIDI note scale, cents-based coloring).
+*   (In work) **Automatic Singing Transcription:** Note segmentation and musical staff display of sung notes.
 *   **Recording Controls Widget:** Live-adjustable panel for input gain, volume gate, confidence gate, bandpass filter, and device selection with one-click save to disk.
 
 ### Input Engine Pipeline (applied in order):
@@ -29,6 +30,7 @@ to a hyper-fast Rust core, while leveraging Python's robust machine learning eco
 *   **Pitch Detection** — SWIPE' algorithm extracts frequency, clarity, and voicing from the filtered signal.
 *   **Confidence Gate** — Discards frames where clarity (confidence score) falls below a configurable threshold (default 0.3).
 *   **Pitch Stabilization** — Median filter + octave-jump guard + one-pole smoother removes jitter from raw pitch estimates for clean visual tracking.
+*   **Note Segmentation** — Real-time quantizer converts stabilized pitch stream into discrete note events (started/ended) with running average cents and clarity.
 
 ### Planned features:
 
@@ -130,7 +132,7 @@ ferrotone/
 │       ├── src/
 │       │   ├── audio/       #   cpal capture engine
 │       │   ├── pitch/       #   YIN/MPM/SWIPE' detectors
-│       │   └── music/       #   hz_to_midi, note naming, cents
+│       │   └── music/       #   hz_to_midi, note naming, cents, NoteSegmenter
 │       └── tests/           #   Unit tests
 ├── samples/                 # Vocal sample library (62 WAV files + tone_map.json)
 ├── doc/                     # Architecture & design docs
