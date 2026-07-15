@@ -43,6 +43,26 @@ export interface Settings {
   user: UserSettings;
 }
 
+export interface NoteEvent {
+  event_type: 'started' | 'ended';
+  note_name: string;
+  midi: number;
+  cents_deviation: number;
+  clarity: number;
+  duration_ms: number;
+  timestamp_ms: number;
+}
+
+export interface NoteSegment {
+  note_name: string;
+  midi: number;
+  cents_deviation: number;
+  clarity: number;
+  duration_ms: number;
+  start_timestamp_ms: number;
+  end_timestamp_ms: number;
+}
+
 export interface VolumeFrame {
   rms_level: number;
   timestamp_ms: number;

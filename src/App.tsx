@@ -2,8 +2,10 @@ import { useState } from 'react';
 import AudioControls from './components/AudioControls';
 import PitchDisplay from './components/PitchDisplay';
 import PitchGraph from './components/PitchGraph';
+import TranscriptionStaff from './components/TranscriptionStaff';
 import VolumeGraph from './components/VolumeGraph';
 import { useAudioSettings } from './hooks/useAudioSettings';
+import { useNoteCapture } from './hooks/useNoteCapture';
 import { usePitchCapture } from './hooks/usePitchCapture';
 import { usePitchGraphCapture } from './hooks/usePitchGraphCapture';
 import { useVolumeCapture } from './hooks/useVolumeCapture';
@@ -23,6 +25,7 @@ function App() {
 
   const { bufferRef: volumeBufferRef } = useVolumeCapture(isCapturing);
   const { bufferRef: pitchBufferRef } = usePitchGraphCapture(isCapturing);
+  const { segmentsRef } = useNoteCapture(isCapturing);
 
   const [showControls, setShowControls] = useState(true);
   const nc = settings.noise_cancellation;
@@ -84,6 +87,7 @@ function App() {
       </div>
       <VolumeGraph bufferRef={volumeBufferRef} isCapturing={isCapturing} />
       <PitchGraph bufferRef={pitchBufferRef} isCapturing={isCapturing} />
+      <TranscriptionStaff segmentsRef={segmentsRef} isCapturing={isCapturing} />
     </main>
   );
 }

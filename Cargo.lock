@@ -1248,6 +1248,7 @@ dependencies = [
 name = "ferrotone"
 version = "0.1.0"
 dependencies = [
+ "crossbeam-channel",
  "ferrotone-core",
  "serde",
  "serde_json",

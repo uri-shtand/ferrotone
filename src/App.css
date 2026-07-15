@@ -486,3 +486,20 @@ h1 {
   width: 100%;
   height: 100%;
 }
+
+/* ------------------------------------------------------------------ */
+/* Transcription Staff Widget                                           */
+/* ------------------------------------------------------------------ */
+
+.transcription-staff {
+  width: 100%;
+  height: 160px;
+  margin-top: 1.5rem;
+  border-top: 1px solid #2a2a2a;
+}
+
+.transcription-staff canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

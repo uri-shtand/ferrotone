@@ -230,10 +230,7 @@ impl CaptureEngine {
             &mut self.confidence_gate,
             ConfidenceGate::new(0.3).with_enabled(false),
         );
-        let mut stabilizer = std::mem::replace(
-            &mut self.stabilizer,
-            StageDStabilizer::new(),
-        );
+        let mut stabilizer = std::mem::take(&mut self.stabilizer);
 
         let handle = std::thread::Builder::new()
             .name("dsp-worker".into())
