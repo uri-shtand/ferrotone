@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
@@ -89,21 +89,34 @@ impl Settings {
             tracing::info!("settings loaded from {}", path.display());
             Ok(settings)
         } else {
-            tracing::info!(
-                "no config file at {}, creating defaults",
-                path.display()
-            );
+            tracing::info!("no config file at {}, creating defaults", path.display());
             let settings = Settings::default();
             settings.save()?;
             Ok(settings)
         }
     }
 
+    pub fn load_from(path: &Path) -> Result<Self, ConfigError> {
+        if path.exists() {
+            let content =
+                std::fs::read_to_string(path).map_err(|e| ConfigError::Io(e.to_string()))?;
+            let settings: Settings =
+                toml::from_str(&content).map_err(|e| ConfigError::Parse(e.to_string()))?;
+            tracing::info!("settings loaded from {}", path.display());
+            Ok(settings)
+        } else {
+            tracing::info!(
+                "custom config not found at {}, using defaults",
+                path.display()
+            );
+            Ok(Settings::default())
+        }
+    }
+
     pub fn save(&self) -> Result<(), ConfigError> {
         let path = Self::config_path();
         if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| ConfigError::Io(e.to_string()))?;
+            std::fs::create_dir_all(parent).map_err(|e| ConfigError::Io(e.to_string()))?;
         }
         let content =
             toml::to_string_pretty(self).map_err(|e| ConfigError::Serialize(e.to_string()))?;

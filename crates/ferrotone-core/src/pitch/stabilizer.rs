@@ -86,16 +86,8 @@ impl StageDStabilizer {
             return self.smoothing_alpha;
         }
 
-        let min = self
-            .history_buffer
-            .iter()
-            .copied()
-            .fold(f32::MAX, f32::min);
-        let max = self
-            .history_buffer
-            .iter()
-            .copied()
-            .fold(f32::MIN, f32::max);
+        let min = self.history_buffer.iter().copied().fold(f32::MAX, f32::min);
+        let max = self.history_buffer.iter().copied().fold(f32::MIN, f32::max);
 
         let cents_range = 1200.0 * (max / min.max(f32::EPSILON)).log2();
 

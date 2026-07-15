@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "crates/ferrotone-cli",
     "crates/ferrotone-core",
     "crates/sample-gen",
     "src-tauri",

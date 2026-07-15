@@ -59,10 +59,7 @@ fn rms_gate_disabled_passes_silence() {
         rms_gate_enabled: false,
         ..CaptureConfig::default()
     };
-    let mut engine = CaptureEngine::new(
-        Box::new(DummyDetector::new(440.0, 0.9, true)),
-        config,
-    );
+    let mut engine = CaptureEngine::new(Box::new(DummyDetector::new(440.0, 0.9, true)), config);
     let frames = engine.feed_audio(&[0.0; 1024]);
     assert_eq!(frames.len(), 1, "disabled RMS gate should pass silence");
 }

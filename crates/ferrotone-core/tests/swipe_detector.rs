@@ -20,8 +20,8 @@ fn sine_a4_440hz() {
 
     // Check last half of frames (after warmup)
     let steady_frames = &frames[frames.len() / 2..];
-    let avg_hz: f32 = steady_frames.iter().map(|f| f.frequency_hz).sum::<f32>()
-        / steady_frames.len() as f32;
+    let avg_hz: f32 =
+        steady_frames.iter().map(|f| f.frequency_hz).sum::<f32>() / steady_frames.len() as f32;
     assert!(
         (avg_hz - 440.0).abs() < 15.0,
         "A4 sine should be ~440 Hz, got avg={} from {} steady frames (total {})",
@@ -39,8 +39,8 @@ fn sine_c4_261hz() {
     assert!(!frames.is_empty(), "should produce pitch frames");
 
     let steady_frames = &frames[frames.len() / 2..];
-    let avg_hz: f32 = steady_frames.iter().map(|f| f.frequency_hz).sum::<f32>()
-        / steady_frames.len() as f32;
+    let avg_hz: f32 =
+        steady_frames.iter().map(|f| f.frequency_hz).sum::<f32>() / steady_frames.len() as f32;
     assert!(
         (avg_hz - 261.63).abs() < 15.0,
         "C4 sine should be ~261.63 Hz, got avg={} from {} steady frames (total {})",
@@ -87,7 +87,13 @@ fn swipe_detector_reasonable_values() {
     // All frequencies should be reasonable
     for frame in &frames {
         assert!(frame.frequency_hz > 0.0, "frequency should be positive");
-        assert!(frame.frequency_hz < 2000.0, "frequency should be reasonable");
-        assert!(frame.clarity >= 0.0 && frame.clarity <= 1.0, "clarity in [0,1]");
+        assert!(
+            frame.frequency_hz < 2000.0,
+            "frequency should be reasonable"
+        );
+        assert!(
+            frame.clarity >= 0.0 && frame.clarity <= 1.0,
+            "clarity in [0,1]"
+        );
     }
 }

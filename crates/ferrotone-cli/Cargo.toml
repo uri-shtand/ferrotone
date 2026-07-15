@@ -1,0 +1,15 @@
+[package]
+name = "ferrotone-cli"
+version = "0.1.0"
+description = "FerroTone command-line mode — batch WAV processing and timed mic capture"
+edition = "2021"
+
+[dependencies]
+ferrotone-core = { path = "../ferrotone-core" }
+clap = { version = "4", features = ["derive"] }
+hound = "3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+crossbeam-channel = "0.5"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

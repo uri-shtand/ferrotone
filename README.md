@@ -32,6 +32,12 @@ to a hyper-fast Rust core, while leveraging Python's robust machine learning eco
 *   **Pitch Stabilization** — Median filter + octave-jump guard + one-pole smoother removes jitter from raw pitch estimates for clean visual tracking.
 *   **Note Segmentation** — Real-time quantizer converts stabilized pitch stream into discrete note events (started/ended) with running average cents and clarity.
 
+### CLI Mode
+
+*   **Batch WAV processing:** Offline pitch detection and note segmentation on WAV files.
+*   **Timed microphone capture:** Run capture for N seconds, log results without GUI.
+*   **JSON output:** Note events and per-frame pitch data as JSON Lines.
+
 ### Planned features:
 
 *   **Interactive Ear Training:** Gamified training screens focusing on scale intervals, hitting precise note progressions, and interval retention.
@@ -109,6 +115,48 @@ All Rust crates (`ferrotone-core` + Tauri shell):
 cargo test --workspace
 ```
 
+### CLI Mode
+
+The `ferrotone-cli` binary runs the DSP pipeline without a GUI — for batch WAV processing or timed microphone capture:
+
+```sh
+# Process a WAV file, output note events and per-frame pitch data
+cargo run --bin ferrotone-cli -- -f samples/male/A4.wav -l notes.jsonl -p pitch.jsonl
+
+# Process with a custom config file instead of platform default
+cargo run --bin ferrotone-cli -- -c custom.toml -f samples/male/C3.wav
+
+# Timed microphone capture for 5 seconds with note log only
+cargo run --bin ferrotone-cli -- -d 5 -l notes.jsonl
+
+# Help
+cargo run --bin ferrotone-cli -- --help
+```
+
+Example JSON output (note log):
+```jsonl
+{"event_type":"started","note_name":"A4","midi":69,"cents_deviation":-1.9,"clarity":0.54,"duration_ms":0,"timestamp_ms":313}
+{"event_type":"ended","note_name":"A4","midi":69,"cents_deviation":-2.0,"clarity":0.54,"duration_ms":2299,"timestamp_ms":2500}
+```
+
+Example JSON output (pitch log):
+```jsonl
+{"timestamp_ms":173,"frequency_hz":439.4,"note_name":"A4","midi":68.98,"cents_deviation":-2.36,"clarity":0.54,"voiced":true}
+{"timestamp_ms":173,"frequency_hz":439.5,"note_name":"A4","midi":68.98,"cents_deviation":-1.85,"clarity":0.54,"voiced":true}
+```
+
+Arguments:
+
+| Flag | Description |
+|------|-------------|
+| `-c`, `--config <PATH>` | Custom config TOML (default: platform path or `./config.toml`) |
+| `-l`, `--note-log <PATH>` | Write note events as JSON Lines (started/ended with duration) |
+| `-p`, `--pitch-log <PATH>` | Write per-frame pitch data as JSON Lines (every stabilized frame) |
+| `-f`, `--file <PATH>` | Input WAV file (offline mode, conflicts with `-d`) |
+| `-d`, `--duration <SECS>` | Capture microphone for N seconds (conflicts with `-f`) |
+
+The CLI has zero Tauri dependency — it uses `ferrotone-core` directly, so it compiles fast and runs without a window system.
+
 ### Lint & format
 
 ```sh
@@ -128,6 +176,7 @@ ferrotone/
 │   ├── tests/               #   Integration tests (MockRuntime)
 │   └── capabilities/        #   Tauri capability permissions
 ├── crates/
+│   ├── ferrotone-cli/        # CLI mode (offline WAV + timed mic, zero Tauri dep)
 │   └── ferrotone-core/      # Pure Rust crate (no Tauri dep)
 │       ├── src/
 │       │   ├── audio/       #   cpal capture engine

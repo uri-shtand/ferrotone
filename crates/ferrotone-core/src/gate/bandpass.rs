@@ -5,10 +5,15 @@ pub struct BandpassFilter {
     low_hz: f32,
     high_hz: f32,
     sample_rate: u32,
-    b0: f32, b1: f32, b2: f32,
-    a1: f32, a2: f32,
-    x1: f32, x2: f32,
-    y1: f32, y2: f32,
+    b0: f32,
+    b1: f32,
+    b2: f32,
+    a1: f32,
+    a2: f32,
+    x1: f32,
+    x2: f32,
+    y1: f32,
+    y2: f32,
     needs_recalc: bool,
 }
 
@@ -19,10 +24,15 @@ impl BandpassFilter {
             low_hz,
             high_hz,
             sample_rate,
-            b0: 0.0, b1: 0.0, b2: 0.0,
-            a1: 0.0, a2: 0.0,
-            x1: 0.0, x2: 0.0,
-            y1: 0.0, y2: 0.0,
+            b0: 0.0,
+            b1: 0.0,
+            b2: 0.0,
+            a1: 0.0,
+            a2: 0.0,
+            x1: 0.0,
+            x2: 0.0,
+            y1: 0.0,
+            y2: 0.0,
             needs_recalc: true,
         };
         f.recalc_coeffs();
@@ -62,7 +72,9 @@ impl BandpassFilter {
         self.needs_recalc = false;
 
         let fs = self.sample_rate as f32;
-        let fc = ((self.low_hz + self.high_hz) / 2.0).max(1.0).min(fs / 2.0 - 1.0);
+        let fc = ((self.low_hz + self.high_hz) / 2.0)
+            .max(1.0)
+            .min(fs / 2.0 - 1.0);
         let bw = (self.high_hz - self.low_hz).max(10.0);
         let q = fc / bw;
         let w0 = 2.0 * PI * fc / fs;
@@ -88,7 +100,8 @@ impl BandpassFilter {
         for sample in samples.iter_mut() {
             let x = *sample;
             let y = self.b0 * x + self.b1 * self.x1 + self.b2 * self.x2
-                - self.a1 * self.y1 - self.a2 * self.y2;
+                - self.a1 * self.y1
+                - self.a2 * self.y2;
             self.x2 = self.x1;
             self.x1 = x;
             self.y2 = self.y1;
@@ -152,8 +165,14 @@ mod tests {
         let high_rms = compute_rms(&high);
         let mid_rms = compute_rms(&mid);
 
-        assert!(mid_rms > low_rms * 2.0, "mid should pass better than low (mid={mid_rms}, low={low_rms})");
-        assert!(mid_rms > high_rms * 2.0, "mid should pass better than high (mid={mid_rms}, high={high_rms})");
+        assert!(
+            mid_rms > low_rms * 2.0,
+            "mid should pass better than low (mid={mid_rms}, low={low_rms})"
+        );
+        assert!(
+            mid_rms > high_rms * 2.0,
+            "mid should pass better than high (mid={mid_rms}, high={high_rms})"
+        );
     }
 
     #[test]
@@ -162,7 +181,10 @@ mod tests {
         let mut input = sine_wave(440.0, 48000, 4096);
         filter.process(&mut input);
         let rms = compute_rms(&input);
-        assert!(rms > 0.1, "440Hz within 80-1000 bandpass should pass (rms={rms})");
+        assert!(
+            rms > 0.1,
+            "440Hz within 80-1000 bandpass should pass (rms={rms})"
+        );
     }
 
     #[test]
@@ -178,7 +200,10 @@ mod tests {
         filter.process(&mut input2);
         let rms_after = compute_rms(&input2);
 
-        assert!(rms_after < rms_before, "raising low cut to 500 should attenuate 440Hz more");
+        assert!(
+            rms_after < rms_before,
+            "raising low cut to 500 should attenuate 440Hz more"
+        );
     }
 
     #[test]
