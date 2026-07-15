@@ -58,8 +58,7 @@ impl NoiseSuppressor {
                 *s *= SCALE;
             }
 
-            self.state
-                .process_frame(&mut self.output_buf, frame);
+            self.state.process_frame(&mut self.output_buf, frame);
 
             frame.copy_from_slice(&self.output_buf);
 
@@ -69,8 +68,7 @@ impl NoiseSuppressor {
         }
 
         if processed < samples.len() {
-            self.leftover
-                .extend_from_slice(&samples[processed..]);
+            self.leftover.extend_from_slice(&samples[processed..]);
         }
 
         samples.truncate(processed);

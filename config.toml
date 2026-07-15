@@ -1,0 +1,21 @@
+[audio]
+sample_rate = 48000
+buffer_size = 1024
+device_name = ""
+algorithm = "swipe"
+
+[noise_cancellation]
+enabled = false
+input_gain = 1.0
+rms_gate_enabled = true
+rms_threshold = 0.009999999776482582
+confidence_gate_enabled = true
+confidence_threshold = 0.30000001192092896
+bandpass_enabled = true
+bandpass_low = 80.0
+bandpass_high = 1600.0
+rnnoise_enabled = false
+
+[user]
+cache_folder = ""
+active_profile = "default"

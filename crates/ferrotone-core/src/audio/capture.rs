@@ -8,7 +8,9 @@ use cpal::traits::{DeviceTrait, StreamTrait};
 
 use crate::audio::{device, VolumeFrame};
 use crate::error::DetectionError;
-use crate::gate::{apply_gain, compute_rms, BandpassFilter, ConfidenceGate, NoiseSuppressor, RmsGate};
+use crate::gate::{
+    apply_gain, compute_rms, BandpassFilter, ConfidenceGate, NoiseSuppressor, RmsGate,
+};
 use crate::pitch::{stabilizer::StageDStabilizer, PitchDetector, PitchFrame};
 
 pub(crate) struct SafeStream(Option<cpal::Stream>);
@@ -62,6 +64,33 @@ impl Default for CaptureConfig {
     }
 }
 
+impl CaptureConfig {
+    pub fn from_settings(
+        audio: &crate::config::AudioSettings,
+        noise: &crate::config::NoiseCancellationSettings,
+    ) -> Self {
+        Self {
+            sample_rate: audio.sample_rate,
+            buffer_size: audio.buffer_size,
+            device_name: if audio.device_name.is_empty() {
+                None
+            } else {
+                Some(audio.device_name.clone())
+            },
+            noise_cancellation_enabled: noise.enabled,
+            input_gain: noise.input_gain,
+            rms_gate_enabled: noise.rms_gate_enabled,
+            rms_threshold: noise.rms_threshold,
+            confidence_gate_enabled: noise.confidence_gate_enabled,
+            confidence_threshold: noise.confidence_threshold,
+            bandpass_enabled: noise.bandpass_enabled,
+            bandpass_low: noise.bandpass_low,
+            bandpass_high: noise.bandpass_high,
+            rnnoise_enabled: noise.rnnoise_enabled,
+        }
+    }
+}
+
 enum ControlSignal {
     Stop,
 }
@@ -95,10 +124,13 @@ impl CaptureEngine {
         Self {
             noise_suppressor: NoiseSuppressor::new()
                 .with_enabled(gates_enabled && config.rnnoise_enabled),
-            bandpass: BandpassFilter::new(config.bandpass_low, config.bandpass_high, config.sample_rate)
-                .with_enabled(gates_enabled && config.bandpass_enabled),
-            rms_gate: RmsGate::new(config.rms_threshold)
-                .with_enabled(config.rms_gate_enabled),
+            bandpass: BandpassFilter::new(
+                config.bandpass_low,
+                config.bandpass_high,
+                config.sample_rate,
+            )
+            .with_enabled(gates_enabled && config.bandpass_enabled),
+            rms_gate: RmsGate::new(config.rms_threshold).with_enabled(config.rms_gate_enabled),
             confidence_gate: ConfidenceGate::new(config.confidence_threshold)
                 .with_enabled(gates_enabled && config.confidence_gate_enabled),
             stabilizer: StageDStabilizer::new(),
@@ -222,10 +254,8 @@ impl CaptureEngine {
             &mut self.bandpass,
             BandpassFilter::new(80.0, 1000.0, 48000).with_enabled(false),
         );
-        let rms_gate = std::mem::replace(
-            &mut self.rms_gate,
-            RmsGate::new(0.01).with_enabled(false),
-        );
+        let rms_gate =
+            std::mem::replace(&mut self.rms_gate, RmsGate::new(0.01).with_enabled(false));
         let mut confidence_gate = std::mem::replace(
             &mut self.confidence_gate,
             ConfidenceGate::new(0.3).with_enabled(false),
@@ -277,7 +307,9 @@ impl CaptureEngine {
                                     stabilizer.process(None);
                                 }
                                 for frame in &frames {
-                                    if let Some(stable_hz) = stabilizer.process(Some(frame.frequency_hz)) {
+                                    if let Some(stable_hz) =
+                                        stabilizer.process(Some(frame.frequency_hz))
+                                    {
                                         let stable_frame = PitchFrame {
                                             frequency_hz: stable_hz,
                                             ..frame.clone()
@@ -380,7 +412,7 @@ impl CaptureEngine {
                     frequency_hz: stable_hz,
                     ..frame.clone()
                 };
-                let _ = self.pitch_tx.send(stable_frame.clone());
+                let _ = self.pitch_tx.try_send(stable_frame.clone());
                 stable_frames.push(stable_frame);
             }
         }

@@ -8,7 +8,10 @@ fn none_input_clears_buffer() {
     assert!(s.process(Some(441.0)).is_some());
     // First few None calls hold the line (hold_silent_frames = 5)
     for _ in 0..5 {
-        assert!(s.process(None).is_some(), "should hold during brief silence");
+        assert!(
+            s.process(None).is_some(),
+            "should hold during brief silence"
+        );
     }
     // After hold_silent_frames exceeded, it clears and returns None
     assert!(s.process(None).is_none());
@@ -73,14 +76,17 @@ fn non_octave_leap_between_consecutive_jumps_resets_counter() {
     let mut s = StageDStabilizer::new_with(3, 1.0, 3);
     s.process(Some(440.0));
     assert_eq!(s.process(Some(880.0)), Some(440.0)); // suppressed (1)
-    // Push enough values for median to converge on 441
+                                                     // Push enough values for median to converge on 441
     s.process(Some(441.0));
     let result = s.process(Some(441.0));
     assert!(result.is_some());
     assert!((result.unwrap() - 441.0).abs() < 1.0);
     // Now a new octave jump should be treated as first attempt
     let suppressed = s.process(Some(880.0)).unwrap();
-    assert!((suppressed - 441.0).abs() < 1.0, "expected ~441, got {suppressed}"); // suppressed again
+    assert!(
+        (suppressed - 441.0).abs() < 1.0,
+        "expected ~441, got {suppressed}"
+    ); // suppressed again
 }
 
 #[test]

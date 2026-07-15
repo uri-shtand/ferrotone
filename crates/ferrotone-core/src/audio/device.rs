@@ -1,5 +1,5 @@
-use serde::Serialize;
 use cpal::traits::{DeviceTrait, HostTrait};
+use serde::Serialize;
 
 use crate::audio::capture::CaptureConfig;
 use crate::error::DetectionError;
@@ -12,7 +12,9 @@ pub struct AudioDeviceInfo {
 
 pub fn list_input_devices(default_name: &str) -> Result<Vec<AudioDeviceInfo>, String> {
     let host = cpal::default_host();
-    let devices = host.devices().map_err(|e| format!("failed to enumerate devices: {e}"))?;
+    let devices = host
+        .devices()
+        .map_err(|e| format!("failed to enumerate devices: {e}"))?;
 
     let mut result = Vec::new();
     for device in devices {

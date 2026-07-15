@@ -12,9 +12,18 @@ struct Formant {
 }
 
 const FORMANT_AH: [Formant; 3] = [
-    Formant { freq: 730.0, bw: 80.0 },
-    Formant { freq: 1090.0, bw: 90.0 },
-    Formant { freq: 2440.0, bw: 120.0 },
+    Formant {
+        freq: 730.0,
+        bw: 80.0,
+    },
+    Formant {
+        freq: 1090.0,
+        bw: 90.0,
+    },
+    Formant {
+        freq: 2440.0,
+        bw: 120.0,
+    },
 ];
 
 fn main() {
@@ -122,21 +131,31 @@ fn generate_wav(path: &str, frequency_hz: f32, voice: &str) -> Result<(), String
         sample_format: hound::SampleFormat::Int,
     };
 
-    let mut writer = hound::WavWriter::create(path, spec).map_err(|e| format!("wav create: {e}"))?;
+    let mut writer =
+        hound::WavWriter::create(path, spec).map_err(|e| format!("wav create: {e}"))?;
     for s in &samples {
-        writer.write_sample(*s).map_err(|e| format!("wav write: {e}"))?;
+        writer
+            .write_sample(*s)
+            .map_err(|e| format!("wav write: {e}"))?;
     }
-    writer.finalize().map_err(|e| format!("wav finalize: {e}"))?;
+    writer
+        .finalize()
+        .map_err(|e| format!("wav finalize: {e}"))?;
 
     Ok(())
 }
 
 /// Simple biquad bandpass filter (direct form I).
 struct Biquad {
-    b0: f32, b1: f32, b2: f32,
-    a1: f32, a2: f32,
-    x1: f32, x2: f32,
-    y1: f32, y2: f32,
+    b0: f32,
+    b1: f32,
+    b2: f32,
+    a1: f32,
+    a2: f32,
+    x1: f32,
+    x2: f32,
+    y1: f32,
+    y2: f32,
 }
 
 impl Biquad {
@@ -154,15 +173,22 @@ impl Biquad {
         let a2 = (1.0 - alpha) / a0;
 
         Biquad {
-            b0, b1, b2, a1, a2,
-            x1: 0.0, x2: 0.0,
-            y1: 0.0, y2: 0.0,
+            b0,
+            b1,
+            b2,
+            a1,
+            a2,
+            x1: 0.0,
+            x2: 0.0,
+            y1: 0.0,
+            y2: 0.0,
         }
     }
 
     fn process(&mut self, x: f32) -> f32 {
         let y = self.b0 * x + self.b1 * self.x1 + self.b2 * self.x2
-            - self.a1 * self.y1 - self.a2 * self.y2;
+            - self.a1 * self.y1
+            - self.a2 * self.y2;
         self.x2 = self.x1;
         self.x1 = x;
         self.y2 = self.y1;

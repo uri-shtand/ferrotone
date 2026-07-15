@@ -87,7 +87,12 @@ mod tests {
     #[test]
     fn mixed_clarity() {
         let mut gate = ConfidenceGate::new(0.3);
-        let frames = vec![make_frame(0.1), make_frame(0.5), make_frame(0.2), make_frame(0.9)];
+        let frames = vec![
+            make_frame(0.1),
+            make_frame(0.5),
+            make_frame(0.2),
+            make_frame(0.9),
+        ];
         let result = gate.process(frames);
         assert_eq!(result.len(), 2);
         for frame in &result {
