@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/ferrotone-cli",
     "crates/ferrotone-core",
+    "crates/mir1k-download",
     "crates/sample-gen",
     "src-tauri",
 ]

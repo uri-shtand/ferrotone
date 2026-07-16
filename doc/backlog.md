@@ -1,11 +1,8 @@
-* * Sensitivity
-* * [ Raw Mic Input ] ──> [ RMS Volume Gate ] ──> [ RNNoise (nnnoiseless) ] ──> [ Pitch Engine ]
 
 * Go over each class. Understand it, review it and split it if needed.
 * Use multiple microphone inputs to get better results
 * Recording
 * A widget containing buttons to produce specific pitches. Ideally in a simulated singing voice
-* Command line mode
 * Add testing with real voice recordings
 * Download voice samples (free)
 * Add pitch graph over time ✓
@@ -25,3 +22,4 @@
 * Push the configuration panel to the bottom
 * Increase the default screen size
 * Change window organization completely
+* If the pitch is not on the tone, but close - mark the closest pitch and what direction we need to go to get there (up or down)

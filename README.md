@@ -157,6 +157,16 @@ Arguments:
 
 The CLI has zero Tauri dependency — it uses `ferrotone-core` directly, so it compiles fast and runs without a window system.
 
+### Download external datasets
+
+The MIR-1K singing dataset (1000 WAV clips with pitch labels, lyrics, and vocal/non-vocal annotations) can be downloaded via:
+
+```sh
+cargo run --bin mir1k-download
+```
+
+This downloads the dataset from Hugging Face and extracts it to `external-samples/MIR-1K/`.
+
 ### Lint & format
 
 ```sh
@@ -220,3 +230,10 @@ FerroTone uses a decoupled three-tier design:
 ## Recommended IDE Setup
 
 - [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+
+# Data sets
+
+When downloading data sets, the external-samples folder is in the .gitignore file. It is recommanded to download there
+
+- VocalSet: A Singing Voice Dataset can be found here: https://zenodo.org/records/1193957
+ 

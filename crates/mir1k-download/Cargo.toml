@@ -1,0 +1,9 @@
+[package]
+name = "mir1k-download"
+version = "0.1.0"
+description = "Downloads and extracts the MIR-1K singing dataset to external-samples/"
+edition = "2021"
+
+[dependencies]
+ureq = "3"
+zip = "2"
