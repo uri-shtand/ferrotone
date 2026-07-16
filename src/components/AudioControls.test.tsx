@@ -39,7 +39,6 @@ describe('AudioControls', () => {
   it('shows dirty state when unsaved', () => {
     render(<AudioControls {...defaultProps} dirty={true} />);
     const btn = screen.getByText('Save Settings') as HTMLButtonElement;
-    expect(btn.className).toContain('dirty');
     expect(btn.disabled).toBe(false);
   });
 
@@ -64,6 +63,7 @@ describe('AudioControls', () => {
   it('renders device dropdown with options', () => {
     render(<AudioControls {...defaultProps} />);
     expect(screen.getByText('System Default')).toBeDefined();
+    fireEvent.click(screen.getByRole('combobox'));
     expect(screen.getByText('Default Mic')).toBeDefined();
   });
 

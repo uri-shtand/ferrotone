@@ -199,8 +199,8 @@ export default function PitchGraph({ bufferRef, isCapturing }: PitchGraphProps) 
   }, [bufferRef, isCapturing]);
 
   return (
-    <div className="pitch-graph">
-      <canvas ref={canvasRef} />
+    <div className="w-full h-[120px] mt-6 border-t border-border">
+      <canvas ref={canvasRef} className="block w-full h-full" />
     </div>
   );
 }

@@ -1,4 +1,18 @@
 import { useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Button } from './ui/button';
+import { Card, CardContent, CardFooter } from './ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { Label } from './ui/label';
+import { Switch } from './ui/switch';
+import { Slider } from './ui/slider';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import type { DeviceInfo } from '../types';
 
 interface AudioControlsProps {
@@ -41,70 +55,15 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="audio-section">
-      <button className="audio-section-header" onClick={onToggle} type="button">
-        <span className={`audio-section-arrow ${open ? 'open' : ''}`}>&#9662;</span>
-        <span>{label}</span>
-      </button>
-      {open && <div className="audio-section-body">{children}</div>}
-    </div>
-  );
-}
-
-function Toggle({
-  value,
-  onChange,
-  label,
-}: {
-  value: boolean;
-  onChange: (v: boolean) => void;
-  label: string;
-}) {
-  return (
-    <div className="audio-toggle-row">
-      <span className="audio-toggle-label">{label}</span>
-      <button
-        className={`audio-toggle ${value ? 'on' : 'off'}`}
-        onClick={() => onChange(!value)}
-        type="button"
-      >
-        {value ? 'ON' : 'OFF'}
-      </button>
-    </div>
-  );
-}
-
-function Slider({
-  value,
-  onChange,
-  label,
-  min,
-  max,
-  step,
-  display,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-  display: string;
-}) {
-  return (
-    <div className="audio-slider-row">
-      <span className="audio-slider-label">{label}</span>
-      <input
-        type="range"
-        className="audio-slider"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
-      />
-      <span className="audio-slider-value">{display}</span>
-    </div>
+    <Collapsible open={open} onOpenChange={onToggle}>
+      <CollapsibleTrigger className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent rounded-md transition-colors [&[data-state=open]>svg]:rotate-180">
+        {open ? <ChevronUp className="h-3 w-3 transition-transform" /> : <ChevronDown className="h-3 w-3 transition-transform" />}
+        {label}
+      </CollapsibleTrigger>
+      <CollapsibleContent className="px-3 pb-3 pt-1 space-y-2">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -147,142 +106,202 @@ export default function AudioControls({
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
   return (
-    <div className="audio-controls">
-      <Section
-        label="Input"
-        open={openSections.input}
-        onToggle={() => toggle('input')}
-      >
-        <Slider
-          label="Gain"
-          value={inputGain}
-          onChange={onInputGainChange}
-          min={0}
-          max={2}
-          step={0.05}
-          display={`${inputGain.toFixed(2)}x`}
-        />
-        {devices.length > 0 && (
-          <div className="audio-slider-row">
-            <span className="audio-slider-label">Device</span>
-            <select
-              className="audio-select"
-              value={deviceName}
-              onChange={(e) => onDeviceNameChange(e.target.value)}
-            >
-              <option value="">System Default</option>
-              {devices.map((d) => (
-                <option key={d.name} value={d.name}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
+    <Card className="mt-6">
+      <CardContent className="p-2 space-y-0">
+        <Section
+          label="Input"
+          open={openSections.input}
+          onToggle={() => toggle('input')}
+        >
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Label className="min-w-[80px] text-xs text-muted-foreground">Gain</Label>
+              <div className="flex-1 flex items-center gap-3">
+                <Slider
+                  value={[inputGain]}
+                  onValueChange={([v]) => onInputGainChange(v)}
+                  min={0}
+                  max={2}
+                  step={0.05}
+                  className="flex-1"
+                />
+                <span className="min-w-[55px] text-right text-xs text-muted-foreground tabular-nums">
+                  {inputGain.toFixed(2)}x
+                </span>
+              </div>
+            </div>
+            {devices.length > 0 && (
+              <div className="flex items-center gap-3">
+                <Label className="min-w-[80px] text-xs text-muted-foreground">Device</Label>
+                <Select
+                  value={deviceName || 'default'}
+                  onValueChange={(v) => onDeviceNameChange(v === 'default' ? '' : v)}
+                >
+                  <SelectTrigger className="flex-1 h-8 text-xs">
+                    <SelectValue placeholder="System Default" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">System Default</SelectItem>
+                    {devices.map((d) => (
+                      <SelectItem key={d.name} value={d.name}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
-        )}
-      </Section>
+        </Section>
 
-      <Section
-        label="Volume Gate"
-        open={openSections.rms}
-        onToggle={() => toggle('rms')}
-      >
-        <Toggle
-          label="Enabled"
-          value={rmsGateEnabled}
-          onChange={onRmsGateEnabledChange}
-        />
-        <Slider
-          label="Threshold"
-          value={rmsThreshold}
-          onChange={onRmsThresholdChange}
-          min={0}
-          max={0.5}
-          step={0.001}
-          display={rmsThreshold.toFixed(3)}
-        />
-      </Section>
+        <Section
+          label="Volume Gate"
+          open={openSections.rms}
+          onToggle={() => toggle('rms')}
+        >
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Label className="min-w-[80px] text-xs text-muted-foreground">Enabled</Label>
+              <Switch
+                checked={rmsGateEnabled}
+                onCheckedChange={onRmsGateEnabledChange}
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <Label className="min-w-[80px] text-xs text-muted-foreground">Threshold</Label>
+              <div className="flex-1 flex items-center gap-3">
+                <Slider
+                  value={[rmsThreshold]}
+                  onValueChange={([v]) => onRmsThresholdChange(v)}
+                  min={0}
+                  max={0.5}
+                  step={0.001}
+                  className="flex-1"
+                />
+                <span className="min-w-[55px] text-right text-xs text-muted-foreground tabular-nums">
+                  {rmsThreshold.toFixed(3)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </Section>
 
-      <Section
-        label="Confidence Gate"
-        open={openSections.confidence}
-        onToggle={() => toggle('confidence')}
-      >
-        <Toggle
-          label="Enabled"
-          value={confidenceGateEnabled}
-          onChange={onConfidenceGateEnabledChange}
-        />
-        <Slider
-          label="Threshold"
-          value={confidenceThreshold}
-          onChange={onConfidenceThresholdChange}
-          min={0}
-          max={1}
-          step={0.01}
-          display={confidenceThreshold.toFixed(2)}
-        />
-      </Section>
+        <Section
+          label="Confidence Gate"
+          open={openSections.confidence}
+          onToggle={() => toggle('confidence')}
+        >
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Label className="min-w-[80px] text-xs text-muted-foreground">Enabled</Label>
+              <Switch
+                checked={confidenceGateEnabled}
+                onCheckedChange={onConfidenceGateEnabledChange}
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <Label className="min-w-[80px] text-xs text-muted-foreground">Threshold</Label>
+              <div className="flex-1 flex items-center gap-3">
+                <Slider
+                  value={[confidenceThreshold]}
+                  onValueChange={([v]) => onConfidenceThresholdChange(v)}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  className="flex-1"
+                />
+                <span className="min-w-[55px] text-right text-xs text-muted-foreground tabular-nums">
+                  {confidenceThreshold.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </Section>
 
-      <Section
-        label="Noise Cancellation"
-        open={openSections.nc}
-        onToggle={() => toggle('nc')}
-      >
-        <Toggle
-          label="Master"
-          value={noiseCancellationEnabled}
-          onChange={onNoiseCancellationEnabledChange}
-        />
-        <Toggle
-          label="RNNoise"
-          value={rnnoiseEnabled}
-          onChange={onRnnoiseEnabledChange}
-        />
-      </Section>
+        <Section
+          label="Noise Cancellation"
+          open={openSections.nc}
+          onToggle={() => toggle('nc')}
+        >
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Label className="min-w-[80px] text-xs text-muted-foreground">Master</Label>
+              <Switch
+                checked={noiseCancellationEnabled}
+                onCheckedChange={onNoiseCancellationEnabledChange}
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <Label className="min-w-[80px] text-xs text-muted-foreground">RNNoise</Label>
+              <Switch
+                checked={rnnoiseEnabled}
+                onCheckedChange={onRnnoiseEnabledChange}
+              />
+            </div>
+          </div>
+        </Section>
 
-      <Section
-        label="Bandpass Filter"
-        open={openSections.bandpass}
-        onToggle={() => toggle('bandpass')}
-      >
-        <Toggle
-          label="Enabled"
-          value={bandpassEnabled}
-          onChange={onBandpassEnabledChange}
-        />
-        <Slider
-          label="Low Cut"
-          value={bandpassLow}
-          onChange={onBandpassLowChange}
-          min={20}
-          max={2000}
-          step={1}
-          display={`${bandpassLow.toFixed(0)} Hz`}
-        />
-        <Slider
-          label="High Cut"
-          value={bandpassHigh}
-          onChange={onBandpassHighChange}
-          min={100}
-          max={4000}
-          step={1}
-          display={`${bandpassHigh.toFixed(0)} Hz`}
-        />
-      </Section>
-
-      <div className="audio-controls-footer">
-        <button
-          className={`btn btn-save ${dirty ? 'dirty' : ''}`}
+        <Section
+          label="Bandpass Filter"
+          open={openSections.bandpass}
+          onToggle={() => toggle('bandpass')}
+        >
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Label className="min-w-[80px] text-xs text-muted-foreground">Enabled</Label>
+              <Switch
+                checked={bandpassEnabled}
+                onCheckedChange={onBandpassEnabledChange}
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <Label className="min-w-[80px] text-xs text-muted-foreground">Low Cut</Label>
+              <div className="flex-1 flex items-center gap-3">
+                <Slider
+                  value={[bandpassLow]}
+                  onValueChange={([v]) => onBandpassLowChange(v)}
+                  min={20}
+                  max={2000}
+                  step={1}
+                  className="flex-1"
+                />
+                <span className="min-w-[55px] text-right text-xs text-muted-foreground tabular-nums">
+                  {bandpassLow.toFixed(0)} Hz
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Label className="min-w-[80px] text-xs text-muted-foreground">High Cut</Label>
+              <div className="flex-1 flex items-center gap-3">
+                <Slider
+                  value={[bandpassHigh]}
+                  onValueChange={([v]) => onBandpassHighChange(v)}
+                  min={100}
+                  max={4000}
+                  step={1}
+                  className="flex-1"
+                />
+                <span className="min-w-[55px] text-right text-xs text-muted-foreground tabular-nums">
+                  {bandpassHigh.toFixed(0)} Hz
+                </span>
+              </div>
+            </div>
+          </div>
+        </Section>
+      </CardContent>
+      <CardFooter className="flex items-center justify-between px-3 py-3">
+        <Button
           onClick={onSave}
           disabled={!dirty}
-          type="button"
+          variant={dirty ? 'default' : 'outline'}
+          size="sm"
         >
           Save Settings
-        </button>
-        <span className="audio-hint">
+        </Button>
+        <span className="text-xs text-muted-foreground">
           {dirty ? 'Unsaved changes' : 'All changes saved'}
         </span>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
 }

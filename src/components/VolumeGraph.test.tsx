@@ -17,7 +17,7 @@ describe('VolumeGraph', () => {
     const { container } = render(
       <VolumeGraph bufferRef={bufferRef} isCapturing={false} />,
     );
-    expect(container.firstElementChild?.className).toBe('volume-graph');
+    expect(container.firstElementChild?.className).toBe('w-full h-[120px] mt-6 border-t border-border');
   });
 
   it('does_not_crash_with_data', () => {

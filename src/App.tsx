@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Cog } from 'lucide-react';
 import AudioControls from './components/AudioControls';
 import PitchDisplay from './components/PitchDisplay';
 import PitchGraph from './components/PitchGraph';
@@ -9,7 +10,6 @@ import { useNoteCapture } from './hooks/useNoteCapture';
 import { usePitchCapture } from './hooks/usePitchCapture';
 import { usePitchGraphCapture } from './hooks/usePitchGraphCapture';
 import { useVolumeCapture } from './hooks/useVolumeCapture';
-import './App.css';
 
 function App() {
   const { isCapturing, error, latestFrame, start, stop } = usePitchCapture();
@@ -32,12 +32,14 @@ function App() {
   const audio = settings.audio;
 
   return (
-    <main className="layout">
-      <div className="container">
-        <div className="header-row">
-          <h1>FerroTone</h1>
+    <main className="flex flex-col items-center min-h-screen">
+      <div className="max-w-xl w-full px-4 py-8 text-center">
+        <div className="flex items-center justify-center gap-3 mb-8">
+          <h1 className="text-xl font-light tracking-[0.1em] uppercase text-muted-foreground">
+            FerroTone
+          </h1>
           <button
-            className={`btn btn-gear ${showControls ? 'active' : ''}`}
+            className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9 w-9 border border-muted-foreground/30 text-muted-foreground hover:bg-accent hover:text-accent-foreground ${showControls ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90 hover:text-primary-foreground' : 'bg-transparent'}`}
             onClick={() => {
               setShowControls((v) => !v);
               if (!showControls) refreshDevices();
@@ -45,10 +47,14 @@ function App() {
             type="button"
             title="Audio Controls"
           >
-            &#9881;
+            <Cog className="h-4 w-4" />
           </button>
         </div>
-        {error && <div className="error-message">{error}</div>}
+        {error && (
+          <div className="bg-destructive/15 border border-destructive text-destructive rounded-lg px-4 py-2 mb-4 text-sm">
+            {error}
+          </div>
+        )}
         <PitchDisplay
           isCapturing={isCapturing}
           latestFrame={latestFrame}

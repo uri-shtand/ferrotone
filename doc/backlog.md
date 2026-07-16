@@ -23,3 +23,7 @@
 * Increase the default screen size
 * Change window organization completely
 * If the pitch is not on the tone, but close - mark the closest pitch and what direction we need to go to get there (up or down)
+* Switch toward a design system
+* Switch toward a dashboard style like: https://adminlte.io/themes/v4/index2.html 
+* Use motion for the graphs - https://motion.dev/ 
+* Add gamification shadcn library and components

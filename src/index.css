@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 15% 15%;
+    --foreground: 0 0% 96%;
+    --card: 222 15% 13%;
+    --card-foreground: 0 0% 96%;
+    --popover: 222 15% 13%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 222 15% 15%;
+    --secondary: 217 19% 27%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 217 19% 20%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 19% 27%;
+    --accent-foreground: 0 0% 96%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 96%;
+    --border: 217 19% 27%;
+    --input: 217 19% 27%;
+    --ring: 142 71% 45%;
+    --radius: 0.5rem;
+  }
+
+  .light {
+    --background: 0 0% 96%;
+    --foreground: 222 15% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 15% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 15% 15%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 93%;
+    --secondary-foreground: 222 15% 15%;
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 93%;
+    --accent-foreground: 222 15% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 87%;
+    --input: 0 0% 87%;
+    --ring: 142 71% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}

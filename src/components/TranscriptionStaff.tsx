@@ -183,8 +183,8 @@ export default function TranscriptionStaff({ segmentsRef, isCapturing }: Transcr
   }, [segmentsRef, isCapturing]);
 
   return (
-    <div className="transcription-staff">
-      <canvas ref={canvasRef} />
+    <div className="w-full h-[160px] mt-6 border-t border-border">
+      <canvas ref={canvasRef} className="block w-full h-full" />
     </div>
   );
 }
